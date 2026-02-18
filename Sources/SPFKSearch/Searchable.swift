@@ -26,7 +26,7 @@ extension Searchable {
 
         // Log.debug(parts)
 
-        return if #available(macOS 26, *) {
+        return if #available(macOS 26, iOS 26, *) {
             fuzzyMatch(to: parts, minimumScore: minimumScore)
         } else {
             contains(query: parts, minimumScore: minimumScore)
