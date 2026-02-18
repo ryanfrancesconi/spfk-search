@@ -1,3 +1,0 @@
-# SPFK
-
-Pure Swift package
