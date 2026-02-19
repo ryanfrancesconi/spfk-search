@@ -1,3 +1,5 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-search
+
 import Foundation
 
 public enum SearchMethod: Sendable, Hashable, Equatable {

@@ -5,12 +5,7 @@ import FuzzyMatch
 import SPFKBase
 
 public protocol Searchable: Sendable, Hashable {
-    var searchableArray: [String] { get }
-    var searchablePrimaryValue: String? { get }
-}
-
-extension Searchable {
-    public var searchablePrimaryValue: String? { nil }
+    var searchableValue: SearchableValue { get }
 }
 
 extension Searchable {
@@ -19,11 +14,23 @@ extension Searchable {
         searchMethod: SearchMethod = .best,
         minimumScore: UnitInterval = 0.7
     ) -> UnitInterval? {
-        QuerySearch(
-            source: self,
+        let querySearch = QuerySearch(
+            searchableValue: searchableValue,
             query: query,
             searchMethod: searchMethod,
             minimumScore: minimumScore
-        ).similarity
+        )
+
+        return querySearch.similarity
+    }
+}
+
+public struct SearchableValue: Sendable, Hashable {
+    public let array: [String]
+    public let primaryKey: String?
+
+    public init(array: [String], primaryKey: String?) {
+        self.array = array
+        self.primaryKey = primaryKey
     }
 }
