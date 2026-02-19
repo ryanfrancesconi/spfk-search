@@ -44,6 +44,15 @@ public struct QuerySearch: Sendable {
         algorithm: .editDistance(tightEditConfig)
     )
 
+    public static let autocompleteConfig = MatchConfig(
+        minScore: 0.6,
+        algorithm: .editDistance(EditDistanceConfig(
+            maxEditDistance: 1,
+            prefixWeight: 2.0,
+            substringWeight: 0.8
+        ))
+    )
+
     public init(
         searchableValue: SearchableValue,
         query: DelimitedQuery,
