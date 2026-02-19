@@ -3,6 +3,8 @@
 import Foundation
 import SPFKBase
 
+// MARK: - Placeholder functionality for legacy support
+
 extension QuerySearch {
     // MARK: Simple, localizedStandardRange based
 
