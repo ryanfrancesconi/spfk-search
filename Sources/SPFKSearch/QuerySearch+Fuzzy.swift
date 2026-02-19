@@ -9,37 +9,32 @@ extension QuerySearch {
     public func fuzzySimilarity() -> UnitInterval {
         var topScore: UnitInterval = 0
 
-        let matcher = FuzzyMatcher()
+        let matcher = FuzzyMatcher(config: matchConfig)
         var buffer = matcher.makeBuffer()
-        let hasPrimary = searchableValue.primaryKey != nil
 
-        for word in query.array {
-            let query = matcher.prepare(word)
+        let queryCount = query.array.count
+        let searchableCount = searchableValue.count
 
-            for value in searchableValue.array {
-                guard let wordScore = matcher.score(value, against: query, buffer: &buffer) else { continue }
+        for i in 0 ..< queryCount {
+            let word = query.array[i]
+
+            let fuzzyQuery = matcher.prepare(word)
+
+            for j in 0 ..< searchableCount {
+                let value = searchableValue[j]
+
+                guard let wordScore = matcher.score(value, against: fuzzyQuery, buffer: &buffer) else { continue }
 
                 var score = wordScore.score
 
-                if hasPrimary {
-                    // lower the weight of the main score so that it can be boosted
-                    // if a primary string match is found
-                    score *= 0.8
+                // give extra weight if is the first element, generally filename
+                if searchableCount > 1 {
+                    score *= (j == 0 ? 1.1 : 0.9)
                 }
 
-                // Log.debug("\(value) = \(wordScore)")
+                guard score > matchConfig.minScore else { continue }
 
-                // give extra weight if there is a primary search value assigned,
-                // such a match to the filename
-                if let searchablePrimaryValue = searchableValue.primaryKey,
-                   value == searchablePrimaryValue
-                {
-                    score *= 1.25
-                }
-
-                guard score >= minimumScore else { continue }
-
-                if score == 1 { return 1 }
+                Log.debug("'\(word)' matching '\(value)' = \(wordScore), \(matchConfig.minScore)")
 
                 if score > topScore {
                     topScore = score

@@ -9,8 +9,10 @@ extension QuerySearch {
     public func exactSimilarity() -> UnitInterval {
         var topScore: UnitInterval = 0
 
-        for word in query.array {
-            for value in searchableValue.array {
+        for i in 0 ..< query.array.count {
+            let word = query.array[i]
+
+            for value in searchableValue {
                 var score: UnitInterval = contains(text: value, query: word)
                 // var score: UnitInterval = smithWatermanSimilarity(text: value, query: word)
 
@@ -20,7 +22,7 @@ extension QuerySearch {
 
                 if score == 1 { return 1 }
 
-                if let searchablePrimaryValue = searchableValue.primaryKey, value == searchablePrimaryValue {
+                if i == 0 {
                     score *= 1.2
                 }
 

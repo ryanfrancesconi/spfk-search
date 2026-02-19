@@ -16,11 +16,17 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
         originalString = string
 
         let delimiter = string.contains(",") ? "," : " "
+        
+        let delimiterCount = string.ranges(of: delimiter).count
         let string = string.normalized
+        
+        var parts: [String] = delimiter == " " ? [string] : []
 
-        var parts = string
-            .splitDelimited(delimiter: delimiter)
-            .filter(\.isNotEmpty)
+        if delimiterCount > 0 {
+            parts += string
+                .splitDelimited(delimiter: delimiter)
+                .filter(\.isNotEmpty)
+        }
 
         // if a word ends with an s, drop the s and add a singular(ish) word to the query
         // this seems to help matches in some cases

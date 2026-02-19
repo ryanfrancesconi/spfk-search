@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum SearchMethod: Sendable, Hashable, Equatable {
+public enum SearchAlgorithm: Sendable, Hashable, Equatable {
     @available(macOS 26, iOS 26, *)
     case fuzzy
 
