@@ -19,6 +19,6 @@ final class FuzzyTests: TestCaseModel {
 
         let obj = Object()
 
-        #expect(obj.fuzzyMatch(to: ["bird"]) == 1)
+        #expect(obj.fuzzySimilarity(to: ["bird"]) == 1)
     }
 }
