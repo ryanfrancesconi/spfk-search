@@ -1,0 +1,69 @@
+{
+  "originHash" : "e4203949b53b688e571a1a831ae8452c2d24706c0dcca06afef6ef6b54d1cf32",
+  "pins" : [
+    {
+      "identity" : "fuzzymatch",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ryanfrancesconi/FuzzyMatch.git",
+      "state" : {
+        "branch" : "development",
+        "revision" : "10943fe700abe3914197884eecb808c91a95e5fd"
+      }
+    },
+    {
+      "identity" : "spfk-base",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ryanfrancesconi/spfk-base",
+      "state" : {
+        "branch" : "development",
+        "revision" : "3d95d48de79d49d2ba3a3648b4db701b9974c21e"
+      }
+    },
+    {
+      "identity" : "spfk-testing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ryanfrancesconi/spfk-testing",
+      "state" : {
+        "branch" : "development",
+        "revision" : "447bc8d175b69a718f2e822d1152b788c1c54d82"
+      }
+    },
+    {
+      "identity" : "swift-async-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-async-algorithms",
+      "state" : {
+        "revision" : "2971dd5d9f6e0515664b01044826bcea16e59fac",
+        "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "7b847a3b7008b2dc2f47ca3110d8c782fb2e5c7e",
+        "version" : "1.3.0"
+      }
+    },
+    {
+      "identity" : "swift-extensions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/orchetect/swift-extensions",
+      "state" : {
+        "revision" : "f090f8210d7dfba476edefbe0f269854d07b32a6",
+        "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "swift-numerics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-numerics",
+      "state" : {
+        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+        "version" : "1.1.1"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/FuzzyMatch.git", branch: "support-legacy-operating-systems"),
+        .package(url: "https://github.com/ryanfrancesconi/FuzzyMatch.git", branch: "development"),
 
     ],
     targets: [
