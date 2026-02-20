@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "spfk-search",
-    platforms: [.macOS(.v14), .iOS(.v26),],
+    platforms: [.macOS(.v14), .iOS(.v17),],
     products: [
         .library(
             name: "SPFKSearch",
