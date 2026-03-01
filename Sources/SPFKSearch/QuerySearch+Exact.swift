@@ -53,7 +53,6 @@ extension QuerySearch {
         }
 
         let baseScore: UnitInterval = 0.5
-
         let textCount = Double(text.count)
         let queryCount = Double(query.count)
 

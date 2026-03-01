@@ -15,21 +15,6 @@ public struct QuerySearch: Sendable {
         matchConfig.minScore
     }
 
-    /**
-     maxEditDistance: Int = 2,
-     longQueryMaxEditDistance: Int = 3,
-     longQueryThreshold: Int = 13,
-     prefixWeight: Double = 1.5,
-     substringWeight: Double = 1.0,
-     wordBoundaryBonus: Double = 0.1,
-     consecutiveBonus: Double = 0.05,
-     gapPenalty: GapPenalty = .default,
-     firstMatchBonus: Double = 0.15,
-     firstMatchBonusRange: Int = 10,
-     lengthPenalty: Double = 0.003,
-     acronymWeight: Double = 1.0
-     */
-
     /// Tighter matching: increase gap penalties
     public static let tightEditConfig = EditDistanceConfig(
         substringWeight: 0.7,
@@ -76,10 +61,6 @@ public struct QuerySearch: Sendable {
 
         self.matchConfig = matchConfig ?? Self.defaultConfig
 
-        if #available(macOS 26, iOS 26, *) {
-            similarity = fuzzySimilarity()
-        } else {
-            similarity = exactSimilarity()
-        }
+        similarity = fuzzySimilarity()
     }
 }

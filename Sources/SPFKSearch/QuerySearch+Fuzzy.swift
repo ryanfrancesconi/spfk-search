@@ -5,7 +5,6 @@ import FuzzyMatch
 import SPFKBase
 
 extension QuerySearch {
-    @available(macOS 26, iOS 26, *)
     public func fuzzySimilarity() -> UnitInterval {
         var topScore: UnitInterval = 0
 
