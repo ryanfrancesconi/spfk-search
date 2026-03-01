@@ -25,7 +25,7 @@ extension QuerySearch {
                 if score == 1 { return 1 }
 
                 if i == 0 {
-                    score *= 1.2
+                    score = min(score * 1.2, 1.0)
                 }
 
                 guard score >= minimumScore else {

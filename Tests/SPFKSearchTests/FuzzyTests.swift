@@ -192,4 +192,138 @@ extension FuzzyTests {
 
         #expect(similarity < 1)
     }
+
+    @Test func autocompleteConfig() throws {
+        let querySearch = QuerySearch(
+            searchableValue: ["stonehenge"],
+            query: DelimitedQuery(string: "stone"),
+            matchConfig: QuerySearch.autocompleteConfig
+        )
+
+        let similarity = try #require(querySearch.similarity)
+        #expect(similarity > 0.6)
+    }
+
+    @Test func autocompleteNoMatch() {
+        let querySearch = QuerySearch(
+            searchableValue: ["bird"],
+            query: DelimitedQuery(string: "xyz"),
+            matchConfig: QuerySearch.autocompleteConfig
+        )
+
+        #expect(querySearch.similarity == 0)
+    }
+}
+
+// MARK: - Exact Similarity Tests
+
+extension FuzzyTests {
+    @Test func exactIdentical() {
+        let querySearch = QuerySearch(
+            searchableValue: ["bird"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        )
+
+        #expect(querySearch.exactSimilarity() == 1)
+    }
+
+    @Test func exactContainsAtStart() {
+        let querySearch = QuerySearch(
+            searchableValue: ["birdhouse"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        )
+
+        let score = querySearch.exactSimilarity()
+        // "bird" at the start of "birdhouse" scores 1.0 from contains(),
+        // triggering the early return before any boost is applied
+        #expect(score == 1)
+    }
+
+    @Test func exactContainsAtEnd() {
+        let querySearch = QuerySearch(
+            searchableValue: ["mockingbird"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        )
+
+        let score = querySearch.exactSimilarity()
+        // Match at end should score lower than match at start due to proximity scoring
+        let startScore = QuerySearch(
+            searchableValue: ["birdhouse"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        ).exactSimilarity()
+
+        #expect(score > 0.5)
+        #expect(score < startScore)
+    }
+
+    @Test func exactNoMatch() {
+        let querySearch = QuerySearch(
+            searchableValue: ["elephant"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        )
+
+        #expect(querySearch.exactSimilarity() == 0)
+    }
+
+    @Test func exactCaseInsensitive() {
+        let querySearch = QuerySearch(
+            searchableValue: ["Bird"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.5
+        )
+
+        let score = querySearch.exactSimilarity()
+        #expect(score > 0)
+    }
+
+    @Test func exactFirstQueryWordBoost() {
+        // The first query word (i == 0) gets a 1.2x multiplier
+        let querySearch = QuerySearch(
+            searchableValue: ["stonehenge"],
+            query: DelimitedQuery(string: "stone, henge"),
+            minimumScore: 0.3
+        )
+
+        let score = querySearch.exactSimilarity()
+        #expect(score > 0.5)
+    }
+
+    @Test func exactBelowMinimumScore() {
+        // With a very high minimum score, non-matching queries should be filtered out
+        let querySearch = QuerySearch(
+            searchableValue: ["elephant"],
+            query: DelimitedQuery(string: "bird"),
+            minimumScore: 0.99
+        )
+
+        let score = querySearch.exactSimilarity()
+        #expect(score == 0)
+    }
+
+    @Test func exactMinimumScoreFiltersWeakMatch() {
+        // A short query against a long, unrelated text should not pass a high threshold
+        let querySearch = QuerySearch(
+            searchableValue: ["international confederation of wizards"],
+            query: DelimitedQuery(string: "cat"),
+            minimumScore: 0.95
+        )
+
+        let score = querySearch.exactSimilarity()
+        #expect(score == 0)
+    }
+
+    @Test func exactEmptyQuery() {
+        let querySearch = QuerySearch(
+            searchableValue: ["bird"],
+            query: DelimitedQuery(string: ""),
+            minimumScore: 0.5
+        )
+
+        #expect(querySearch.exactSimilarity() == 0)
+    }
 }

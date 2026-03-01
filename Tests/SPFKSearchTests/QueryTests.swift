@@ -32,4 +32,47 @@ final class QueryTests: TestCaseModel {
 
         #expect(query.array == ["cow", "fish", "frog"])
     }
+
+    @Test func empty() throws {
+        let query = DelimitedQuery(string: "")
+
+        #expect(query.array == [])
+        #expect(query.originalString == "")
+    }
+
+    @Test func singleWord() throws {
+        let query = DelimitedQuery(string: "bird")
+
+        #expect(query.array == ["bird"])
+        #expect(query.originalString == "bird")
+    }
+
+    @Test func pluralStripping() throws {
+        let query = DelimitedQuery(string: "birds, cats")
+
+        // "birds" and "cats" should each produce a singular variant
+        #expect(query.array.contains("birds"))
+        #expect(query.array.contains("cats"))
+        #expect(query.array.contains("bird"))
+        #expect(query.array.contains("cat"))
+    }
+
+    @Test func pluralStrippingSpaceDelimited() throws {
+        let query = DelimitedQuery(string: "dogs frogs")
+
+        // Full string is kept, plus individual words, plus singulars
+        #expect(query.array.contains("dogs frogs"))
+        #expect(query.array.contains("dogs"))
+        #expect(query.array.contains("frogs"))
+        #expect(query.array.contains("dog"))
+        #expect(query.array.contains("frog"))
+    }
+
+    @Test func normalization() throws {
+        let query = DelimitedQuery(string: "Café")
+
+        // Normalized form should be lowercased and diacritic-insensitive
+        #expect(query.array.first == "cafe")
+        #expect(query.originalString == "Café")
+    }
 }

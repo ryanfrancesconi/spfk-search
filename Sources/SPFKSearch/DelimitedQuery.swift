@@ -16,22 +16,20 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
         originalString = string
 
         let delimiter = string.contains(",") ? "," : " "
-        
-        let delimiterCount = string.ranges(of: delimiter).count
         let string = string.normalized
-        
+
         var parts: [String] = delimiter == " " ? [string] : []
 
-        if delimiterCount > 0 {
-            parts += string
-                .splitDelimited(delimiter: delimiter)
-                .filter(\.isNotEmpty)
+        let split = string.splitDelimited(delimiter: delimiter).filter(\.isNotEmpty)
+        if split.count > 1 || delimiter == "," {
+            parts += split
         }
 
         // if a word ends with an s, drop the s and add a singular(ish) word to the query
-        // this seems to help matches in some cases
+        // this seems to help matches in some cases. guard against very short words
+        // where dropping the trailing s produces noise (e.g. "us" -> "u")
         let singulars: [String] = parts
-            .filter { $0.last == "s" }
+            .filter { $0.last == "s" && $0.count > 3 }
             .map { String($0.dropLast()) }
 
         if singulars.isNotEmpty {
