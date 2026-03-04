@@ -18,11 +18,18 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
         let delimiter = string.contains(",") ? "," : " "
         let string = string.normalized
 
-        var parts: [String] = delimiter == " " ? [string] : []
-
         let split = string.splitDelimited(delimiter: delimiter).filter(\.isNotEmpty)
-        if split.count > 1 || delimiter == "," {
-            parts += split
+
+        // For space-delimited queries, keep the full string as the first element
+        // so the matcher can try the whole phrase. For comma-delimited, only use parts.
+        var parts: [String] = []
+        if delimiter == " " {
+            parts.append(string)
+            if split.count > 1 {
+                parts += split
+            }
+        } else {
+            parts = split
         }
 
         // if a word ends with an s, drop the s and add a singular(ish) word to the query

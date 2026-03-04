@@ -75,4 +75,55 @@ final class QueryTests: TestCaseModel {
         #expect(query.array.first == "cafe")
         #expect(query.originalString == "Café")
     }
+
+    // MARK: - Edge Cases
+
+    @Test func onlyCommas() {
+        let query = DelimitedQuery(string: ",,,")
+        #expect(query.array.isEmpty)
+    }
+
+    @Test func singleCommaDelimitedWord() {
+        // A single word with a comma present should still parse
+        let query = DelimitedQuery(string: "bird,")
+        #expect(query.array.contains("bird"))
+        #expect(!query.array.contains(""))
+    }
+
+    @Test func shortPluralNotStripped() {
+        // Words with 3 or fewer characters ending in 's' should NOT be stripped
+        let query = DelimitedQuery(string: "us, bus")
+        #expect(query.array.contains("us"))
+        #expect(query.array.contains("bus"))
+        #expect(!query.array.contains("u"))
+        #expect(!query.array.contains("bu"))
+    }
+
+    @Test func longPluralIsStripped() {
+        let query = DelimitedQuery(string: "bass, drums")
+        #expect(query.array.contains("bass"))
+        #expect(query.array.contains("bas"))
+        #expect(query.array.contains("drums"))
+        #expect(query.array.contains("drum"))
+    }
+
+    // MARK: - Equatable / Hashable
+
+    @Test func equalityForSameInput() {
+        let a = DelimitedQuery(string: "bird, fish")
+        let b = DelimitedQuery(string: "bird, fish")
+        #expect(a == b)
+    }
+
+    @Test func inequalityForDifferentInput() {
+        let a = DelimitedQuery(string: "bird")
+        let b = DelimitedQuery(string: "fish")
+        #expect(a != b)
+    }
+
+    @Test func hashableConsistency() {
+        let a = DelimitedQuery(string: "test query")
+        let b = DelimitedQuery(string: "test query")
+        #expect(a.hashValue == b.hashValue)
+    }
 }

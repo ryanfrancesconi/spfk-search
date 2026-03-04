@@ -29,9 +29,10 @@ extension QuerySearch {
                 // give extra weight if is the first element, generally filename
                 if searchableCount > 1 {
                     score *= (j == 0 ? 1.1 : 0.9)
+                    score = min(score, 1.0)
                 }
 
-                guard score > matchConfig.minScore else { continue }
+                guard score >= matchConfig.minScore else { continue }
 
                 #if DEBUG
                 Log.debug("'\(word)' matching '\(value)' = \(wordScore), \(matchConfig.minScore)")
