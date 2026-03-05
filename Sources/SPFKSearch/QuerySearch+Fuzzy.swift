@@ -5,6 +5,17 @@ import FuzzyMatch
 import SPFKBase
 
 extension QuerySearch {
+    /// Computes the fuzzy similarity score between ``query`` and ``searchableValue``.
+    ///
+    /// Iterates all query terms against all searchable strings using `FuzzyMatcher`.
+    /// The first searchable element receives a 1.1x boost; subsequent elements
+    /// receive a 0.9x penalty. Returns the highest score that meets ``minimumScore``,
+    /// clamped to 0–1.
+    ///
+    /// Called automatically during ``QuerySearch/init(searchableValue:query:matchConfig:)``;
+    /// the result is stored in ``similarity``.
+    ///
+    /// - Returns: The best match score (0–1), or `0` if no term meets the threshold.
     public func fuzzySimilarity() -> UnitInterval {
         var topScore: UnitInterval = 0
 
