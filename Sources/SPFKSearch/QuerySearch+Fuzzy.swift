@@ -46,7 +46,7 @@ extension QuerySearch {
                 guard score >= matchConfig.minScore else { continue }
 
                 #if DEBUG
-                Log.debug("'\(word)' matching '\(value)' = \(wordScore), \(matchConfig.minScore)")
+                // Log.debug("'\(word)' matching '\(value)' = \(wordScore), \(matchConfig.minScore)")
                 #endif
 
                 if score > topScore {
