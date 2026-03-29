@@ -99,7 +99,6 @@ public struct QuerySearch: Sendable {
     ) {
         self.query = query
         self.searchableValue = searchableValue
-
         self.matchConfig = matchConfig ?? Self.defaultConfig
 
         similarity = fuzzySimilarity()
