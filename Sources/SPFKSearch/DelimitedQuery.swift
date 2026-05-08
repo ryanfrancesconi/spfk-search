@@ -69,4 +69,17 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
 
         array = parts
     }
+
+    /// Creates a query directly from a pre-built array of normalized terms.
+    ///
+    /// Use this when the terms are already normalized (lowercased, diacritic-free)
+    /// and you want to bypass the string-parsing and singularization logic.
+    /// The `originalString` is set to the joined terms for display purposes.
+    ///
+    /// - Parameter terms: Pre-normalized search terms. Empty terms are filtered out.
+    public init(terms: [String]) {
+        let filtered = terms.filter(\.isNotEmpty)
+        array = filtered
+        originalString = filtered.joined(separator: " ")
+    }
 }
