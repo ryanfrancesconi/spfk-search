@@ -70,7 +70,11 @@ extension Searchable {
         guard precheckTerms.isNotEmpty else { return true }
 
         return searchableValue.contains(where: { candidate in
+            // Normalize case and separators so a lowercase query term like "explo"
+            // matches a title-cased candidate like "Explosion" or an uppercase one
+            // like "EXPLOSIONS". Terms from DelimitedQuery are already lowercased.
             let normCandidate = candidate
+                .normalized
                 .replacingOccurrences(of: "-", with: " ")
                 .replacingOccurrences(of: "_", with: " ")
             return precheckTerms.contains(where: { term in
