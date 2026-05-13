@@ -120,6 +120,11 @@ extension QuerySearch {
     ///
     /// Returns the highest score across all (term × field) pairs that meets `minScore`,
     /// or `0` if no pair does. Early-exits as soon as a perfect score (1.0) is found.
+    ///
+    /// The first searchable element (j==0, typically the primary category name) receives a
+    /// 1.1× boost when the query term is a semantically exact match (`ScoredMatch.kind == .exact`),
+    /// or a 0.9× penalty otherwise. This prevents short prefix matches (e.g. "bird"→"BIRDS",
+    /// "metro"→"METAL") from amplifying to 1.0 and outranking exact synonym matches.
     internal static func scoreCandidate(
         searchableValue: SearchableValue,
         preparedTerms: [FuzzyQuery],
@@ -138,7 +143,16 @@ extension QuerySearch {
 
                 var score = wordScore.score
                 if searchableCount > 1 {
-                    score *= j == 0 ? 1.1 : 0.9
+                    if j == 0 {
+                        // Boost only on a semantically exact match (same length, every
+                        // char matches). Prefix/fuzzy matches get the 0.9× synonym
+                        // penalty — this prevents short terms like "bird"→"BIRDS" or
+                        // "metro"→"METAL" from amplifying to 1.0 via the j==0 boost
+                        // and drowning out exact synonym matches in j>0 fields.
+                        score *= wordScore.kind == .exact ? 1.1 : 0.9
+                    } else {
+                        score *= 0.9
+                    }
                     score = min(score, 1.0)
                 }
 
