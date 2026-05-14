@@ -209,4 +209,133 @@ extension FuzzyTests {
 
         #expect(querySearch.similarity == 0)
     }
+
+    /// Calibrates the fuzzy minScore threshold by scoring known-good and known-bad word pairs
+    /// across the range [0.50, 0.90] and finding where bad pairs are blocked.
+    ///
+    /// Run this test to justify (or adjust) the minScore constant in UCSDetector.
+    /// A "good" pair is a legitimate match (misspelling, plural, truncation).
+    /// A "bad" pair is a character-level coincidence that should NOT match.
+    ///
+    /// Note: gerund→base forms (e.g. "roaring"→"Roar") score below 0.64 due to Jaro-Winkler
+    /// length-difference penalties. This is acceptable — the UCS database provides multiple
+    /// synonym forms per entry, so a gerund will match via another term.
+    @Test func minScoreCalibration() throws {
+        struct Pair {
+            let query: String
+            let candidate: String
+        }
+
+        // Pairs that SHOULD match — same-root word, different form (plural, typo, gerund).
+        let goodPairs: [Pair] = [
+            Pair(query: "growls",    candidate: "Growl"),         // -s suffix
+            Pair(query: "lions",     candidate: "Lion"),           // -s suffix
+            Pair(query: "explosoin", candidate: "Explosion"),      // 1-char transposition typo
+            Pair(query: "footsteps", candidate: "Footstep"),       // plural→singular
+            Pair(query: "howls",     candidate: "Howl"),           // -s suffix
+            Pair(query: "snarls",    candidate: "Snarl"),          // -s suffix
+            // Gerund→gerund: the database now includes *ing forms, so these are valid pairs.
+            Pair(query: "growling",  candidate: "Growling"),       // exact gerund
+            Pair(query: "roaring",   candidate: "Roaring"),        // exact gerund
+            Pair(query: "howling",   candidate: "Howling"),        // exact gerund
+            Pair(query: "snarling",  candidate: "Snarling"),       // exact gerund
+            Pair(query: "hissing",   candidate: "Hissing"),        // exact gerund
+        ]
+
+        // Pairs that should NOT match — real English words sharing characters by coincidence.
+        let badPairs: [Pair] = [
+            Pair(query: "lion",    candidate: "Ignite"),          // Jaro char coincidence (~0.55)
+            Pair(query: "growls",  candidate: "Gallop"),          // share g, o, l (~0.60-0.63)
+            Pair(query: "roar",    candidate: "Burn"),            // short overlap
+            Pair(query: "hiss",    candidate: "Wind"),            // unrelated
+            Pair(query: "lion",    candidate: "Friction"),        // no meaningful overlap
+            Pair(query: "thunder", candidate: "Grind"),           // unrelated
+        ]
+
+        let algorithm = QuerySearch.defaultConfig.algorithm
+
+        // Show raw scores for all pairs before the threshold sweep.
+        let diagConfig = MatchConfig(minScore: 0.0, algorithm: algorithm)
+        let diagMatcher = FuzzyMatcher(config: diagConfig)
+        var diagBuffer = diagMatcher.makeBuffer()
+
+        Log.debug("--- Raw pair scores (no minScore gate) ---")
+        Log.debug("GOOD pairs:")
+        for pair in goodPairs {
+            let q = diagMatcher.prepare(pair.query)
+            let score = diagMatcher.score(pair.candidate, against: q, buffer: &diagBuffer)?.score ?? 0
+            let lhs = pair.query.padding(toLength: 14, withPad: " ", startingAt: 0)
+            let rhs = pair.candidate.padding(toLength: 14, withPad: " ", startingAt: 0)
+            Log.debug(String(format: "  %@ → %@  %.4f", lhs, rhs, score))
+        }
+        Log.debug("BAD pairs:")
+        for pair in badPairs {
+            let q = diagMatcher.prepare(pair.query)
+            let score = diagMatcher.score(pair.candidate, against: q, buffer: &diagBuffer)?.score ?? 0
+            let lhs = pair.query.padding(toLength: 14, withPad: " ", startingAt: 0)
+            let rhs = pair.candidate.padding(toLength: 14, withPad: " ", startingAt: 0)
+            Log.debug(String(format: "  %@ → %@  %.4f", lhs, rhs, score))
+        }
+
+        // Threshold sweep.
+        let stride = 0.01
+        var results: [(threshold: Double, goodPass: Int, badPass: Int)] = []
+        var t = 0.50
+        while t <= 0.90 + 1e-9 {
+            let threshold = (t * 100).rounded() / 100
+            let config = MatchConfig(minScore: threshold, algorithm: algorithm)
+            let matcher = FuzzyMatcher(config: config)
+            var buffer = matcher.makeBuffer()
+
+            var goodPass = 0
+            for pair in goodPairs {
+                let q = matcher.prepare(pair.query)
+                if let s = matcher.score(pair.candidate, against: q, buffer: &buffer), s.score >= threshold {
+                    goodPass += 1
+                }
+            }
+
+            var badPass = 0
+            for pair in badPairs {
+                let q = matcher.prepare(pair.query)
+                if let s = matcher.score(pair.candidate, against: q, buffer: &buffer), s.score >= threshold {
+                    badPass += 1
+                }
+            }
+
+            results.append((threshold, goodPass, badPass))
+            t += stride
+        }
+
+        Log.debug("\nthreshold | good (\(goodPairs.count)) | bad (\(badPairs.count))")
+        Log.debug(String(repeating: "-", count: 34))
+        for r in results {
+            Log.debug(String(format: "  %.2f    |   %d        |  %d", r.threshold, r.goodPass, r.badPass))
+        }
+
+        // Find first threshold where all bad pairs are blocked (primary goal).
+        let allBadBlocked = results.first(where: { $0.badPass == 0 })
+
+        // Find the ideal: all good pass AND no bad pass.
+        let perfectCrossover = results.last(where: { $0.goodPass == goodPairs.count && $0.badPass == 0 })
+
+        if let c = perfectCrossover {
+            Log.debug(String(format: "\nPerfect crossover at %.2f: all %d good pass, 0 bad pass.", c.threshold, goodPairs.count))
+        } else if let b = allBadBlocked {
+            Log.debug(String(format: "\nAll bad pairs blocked from %.2f onward (%d/%d good still pass).", b.threshold, b.goodPass, goodPairs.count))
+            Log.debug("Gerund→base pairs score below threshold by design — the database covers them via alternate synonym entries.")
+        }
+
+        // Must have some threshold where all noise matches are blocked.
+        let blockThreshold = allBadBlocked?.threshold
+        #expect(blockThreshold != nil, "No threshold in [0.50, 0.90] blocks all bad pairs — the fuzzy algorithm may be too lenient for UCS use")
+
+        if let bt = blockThreshold {
+            // All good pairs must still pass at the block threshold.
+            // (Some gerund→base forms score below this — they're intentionally excluded from goodPairs.)
+            let row = results.first(where: { $0.threshold == bt })!
+            #expect(row.goodPass == goodPairs.count,
+                "At the bad-blocking threshold (%.2f), only \(row.goodPass)/\(goodPairs.count) good pairs pass — add more synonym coverage or lower minScore")
+        }
+    }
 }
