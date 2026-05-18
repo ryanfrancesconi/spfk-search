@@ -213,13 +213,15 @@ extension FuzzyTests {
     /// Calibrates the fuzzy minScore threshold by scoring known-good and known-bad word pairs
     /// across the range [0.50, 0.90] and finding where bad pairs are blocked.
     ///
-    /// Run this test to justify (or adjust) the minScore constant in UCSDetector.
     /// A "good" pair is a legitimate match (misspelling, plural, truncation).
     /// A "bad" pair is a character-level coincidence that should NOT match.
     ///
     /// Note: gerund→base forms (e.g. "roaring"→"Roar") score below 0.64 due to Jaro-Winkler
     /// length-difference penalties. This is acceptable — the UCS database provides multiple
     /// synonym forms per entry, so a gerund will match via another term.
+    ///
+    /// Note: UCSDetector uses word-anchored prefix matching (not Jaro-Winkler) precisely
+    /// because some bad pairs ("light"→"Flight") cannot be blocked by any threshold alone.
     @Test func minScoreCalibration() throws {
         struct Pair {
             let query: String
