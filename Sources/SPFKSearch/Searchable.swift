@@ -52,10 +52,10 @@ extension Searchable {
     /// - **Separator normalization** — hyphens and underscores are mapped to spaces in both
     ///   terms and candidates so `"sci-fi"` matches `"sci fi"` and vice versa.
     ///
-    /// - **First-half prefix** — only the leading `max(3, count/2)` characters of each
-    ///   normalized term are required to appear as a substring, which tolerates mid-word
+    /// - **Two-thirds prefix** — only the leading `max(3, count*2/3)` characters of each
+    ///   normalized term are required to appear as a substring, which tolerates trailing
     ///   typos and single-character insertions (e.g. `"percusion"` → checks `"perc"` →
-    ///   passes `"percussion"`).
+    ///   passes `"percussion"`, `"whistle"` → checks `"whis"` instead of `"whi"`).
     ///
     /// - **Short-term exclusion** — terms shorter than 3 characters are excluded from the
     ///   gate entirely; when *all* terms are short the method returns `true` unconditionally
@@ -81,7 +81,7 @@ extension Searchable {
                 let normTerm = term
                     .replacingOccurrences(of: "-", with: " ")
                     .replacingOccurrences(of: "_", with: " ")
-                let prefix = String(normTerm.prefix(max(3, normTerm.count / 2)))
+                let prefix = String(normTerm.prefix(max(3, normTerm.count * 2 / 3)))
                 return normCandidate.contains(prefix)
             })
         })

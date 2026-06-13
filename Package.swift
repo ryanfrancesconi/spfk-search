@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "1.0.1"),
-        .package(url: "https://github.com/ordo-one/FuzzyMatch.git", from: "1.2.0"),
+        .package(url: "https://github.com/ordo-one/FuzzyMatch.git", from: "1.4.0"),
 
     ],
     targets: [
