@@ -144,8 +144,8 @@ Searchable Protocol
 
 ## Requirements
 
-- macOS 14+ / iOS 17+
-- Swift 6.2+
+- **Platforms:** macOS 14+, iOS 17+
+- **Swift:** 6.2+
 
 ## About
 
