@@ -30,7 +30,7 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:../_spfk-packages/test-plans/SPFKSearch.xctestplan"
+            reference = "container:../../test-plans/SPFKSearch.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
