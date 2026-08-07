@@ -12,10 +12,6 @@ public typealias SearchableValue = [String]
 
 /// A type whose instances can be searched by fuzzy text matching.
 ///
-/// Conform to `Searchable` by returning an array of strings from
-/// ``searchableValue``. The protocol extension provides ``similarity(to:minimumScore:)``
-/// and ``similarity(to:matchConfig:)`` for free.
-///
 /// ```swift
 /// struct AudioFile: Searchable {
 ///     let filename: String
@@ -36,18 +32,11 @@ extension Searchable {
     /// Returns `true` when this item has at least one searchable field that could plausibly
     /// match one of the given query terms — a fast O(n·m) gate before the full fuzzy scorer.
     ///
-    /// This serves two purposes:
+    /// Skips fuzzy scoring for ~85% of elements on a typical query — `FuzzyMatcher`'s bitmask
+    /// prefilter passes most long metadata strings regardless — and eliminates false positives like
+    /// `"sci fi"` matching `"Boom, Fire, Fire Crackle"` on shared characters alone.
     ///
-    /// 1. **Performance** — skips fuzzy scoring (~85% of elements for typical queries).
-    ///    `FuzzyMatcher`'s internal bitmask prefilter is supposed to catch unrelated items, but
-    ///    long metadata strings contain enough character variety that most items pass it regardless.
-    ///
-    /// 2. **Precision** — eliminates spurious fuzzy matches. Without this gate the fuzzy
-    ///    scorer can return false positives (e.g. `"sci fi"` matching `"Boom, Fire, Fire Crackle"`)
-    ///    because shared individual characters satisfy the scorer's edit-distance threshold.
-    ///    Requiring a genuine substring connection produces more accurate results overall.
-    ///
-    /// The check is deliberately tolerant to avoid false negatives:
+    /// Deliberately tolerant, to avoid false negatives:
     ///
     /// - **Separator normalization** — hyphens and underscores are mapped to spaces in both
     ///   terms and candidates so `"sci-fi"` matches `"sci fi"` and vice versa.

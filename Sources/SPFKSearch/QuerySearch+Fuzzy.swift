@@ -7,9 +7,8 @@ import SPFKBase
 extension QuerySearch {
     /// Scores all entries against `query` with a single shared ``FuzzyMatcher`` and ``ScoringBuffer``.
     ///
-    /// More efficient than calling `similarity(to:matchConfig:)` per element because matcher
-    /// construction, buffer allocation, and query-term preparation happen once for the entire
-    /// batch rather than once per element.
+    /// Matcher, buffer and query-term preparation happen once for the batch rather than per
+    /// element.
     ///
     /// - Parameters:
     ///   - candidates: The searchable items to score.
@@ -46,9 +45,8 @@ extension QuerySearch {
 
     /// Scores all entries against `query` in parallel using ``withTaskGroup``.
     ///
-    /// Candidates are divided into chunks (one per available CPU core). Each chunk
-    /// runs concurrently with its own ``ScoringBuffer``; a single shared ``FuzzyMatcher``
-    /// and pre-prepared query terms are reused across all tasks.
+    /// One chunk per core, each with its own ``ScoringBuffer``; the matcher and prepared terms are
+    /// shared.
     ///
     /// - Parameters:
     ///   - candidates: The searchable items to score.

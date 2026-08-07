@@ -4,13 +4,8 @@ import Foundation
 
 /// A parsed and normalized search query split into individual terms.
 ///
-/// Accepts raw user input and produces an array of normalized, lowercase,
-/// diacritic-free search terms. Automatically detects comma vs space delimiters
-/// and appends singular variants for words ending in "s" to improve recall.
-///
-/// For space-delimited input the full phrase is kept as the first element
-/// so the matcher can try whole-phrase matching before individual words.
-/// For comma-delimited input only the individual terms are used.
+/// Normalized to lowercase and diacritic-free. Space-delimited input keeps the whole phrase as the
+/// first element so the matcher can try it before the individual words; comma-delimited does not.
 ///
 /// ```swift
 /// let q = DelimitedQuery(string: "haunted stonehenge moon")
@@ -79,9 +74,7 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
 
     /// Creates a query directly from a pre-built array of normalized terms.
     ///
-    /// Use this when the terms are already normalized (lowercased, diacritic-free)
-    /// and you want to bypass the string-parsing and singularization logic.
-    /// The `originalString` is set to the joined terms for display purposes.
+    /// Bypasses parsing and singularization. `originalString` becomes the joined terms.
     ///
     /// - Parameter terms: Pre-normalized search terms. Empty terms are filtered out.
     public init(terms: [String]) {
