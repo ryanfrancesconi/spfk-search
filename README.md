@@ -8,86 +8,15 @@ A Swift package for fuzzy text search with query parsing, normalization, and con
 
 Supports comma and space-delimited queries, automatic diacritic and case normalization, naive plural expansion, first-element weighting, and preset configurations for general search and type-ahead autocomplete.
 
-## Usage
+## Making a type searchable
 
-### Making a type searchable
+Conform to `Searchable` by returning an array of strings as `searchableValue`. Place the most
+important field first — it receives a scoring boost — and the type gets `similarity(to:)` for free.
 
-Conform to the `Searchable` protocol by returning an array of strings. Place the most important field first — it receives a scoring boost.
-
-```swift
-import SPFKSearch
-
-struct AudioFile: Searchable {
-    let filename: String
-    let artist: String
-    let album: String
-
-    var searchableValue: SearchableValue {
-        [filename, artist, album]
-    }
-}
-```
-
-### Basic search
-
-```swift
-let file = AudioFile(filename: "stonehenge", artist: "spinal tap", album: "this is spinal tap")
-
-let score = file.similarity(to: DelimitedQuery(string: "stonehenge"))
-// score == 1.0 (exact match on first element)
-
-let score2 = file.similarity(to: DelimitedQuery(string: "spinal"))
-// score2 ≈ 0.9 (secondary element penalty)
-```
-
-### Custom minimum score
-
-```swift
-let score = file.similarity(
-    to: DelimitedQuery(string: "haunted moon"),
-    minimumScore: 0.1
-)
-```
-
-### Autocomplete
-
-```swift
-let query = DelimitedQuery(string: "stone")
-let score = file.similarity(to: query, matchConfig: QuerySearch.autocompleteConfig)
-// Matches "stonehenge" with prefix weighting
-```
-
-### Direct QuerySearch
-
-```swift
-let search = QuerySearch(
-    searchableValue: ["bird_colony", "nature sounds"],
-    query: DelimitedQuery(string: "bird"),
-    matchConfig: .init(
-        minScore: 0.5,
-        algorithm: .editDistance(QuerySearch.tightEditConfig)
-    )
-)
-
-search.similarity  // 1.0 (first-element boost, clamped)
-```
-
-### Query parsing
-
-```swift
-// Space-delimited: keeps full phrase + individual words + singular variants
-let q1 = DelimitedQuery(string: "dogs frogs")
-q1.array  // ["dogs frogs", "dogs", "frogs", "dog", "frog"]
-
-// Comma-delimited: individual terms only + singular variants
-let q2 = DelimitedQuery(string: "birds, cats")
-q2.array  // ["birds", "cats", "bird", "cat"]
-
-// Normalization is automatic
-let q3 = DelimitedQuery(string: "Café")
-q3.array           // ["cafe"]
-q3.originalString  // "Café"
-```
+A `DelimitedQuery` detects its own delimiter, normalizes case and diacritics, and expands into the
+terms to match: a space-delimited query keeps the full phrase alongside its individual words, a
+comma-delimited one keeps only the terms, and both append singular variants for words ending in `s`.
+The original string is preserved for display.
 
 ## Preset Configurations
 
@@ -132,6 +61,39 @@ Searchable Protocol
     |-- Conform any type by providing searchableValue: [String]
     |-- Gets similarity(to:) methods for free
 ```
+
+## Synonym expansion
+
+Synonym expansion is a **fallback**, and callers are responsible for treating it as one: run it only
+when the literal search returned no results, and scale the resulting scores by the config's ceiling
+after applying the minimum-score filter. Running it unconditionally would let an inferred match
+outrank a literal one.
+
+| Type | Description |
+|------|-------------|
+| **`SynonymExpander`** | Proposes additional terms — a curated tier first, then an `NLEmbedding` scan |
+| **`SynonymVocabulary`** | The term set expansion is constrained to |
+| **`SynonymConfig`** | Its tuning, including the score ceiling |
+
+**Expansion is constrained to a vocabulary** rather than taking `NLEmbedding`'s free nearest
+neighbors, which return the top matches across the whole embedding and can only ever suggest words
+no file contains. The vocabulary is supplied by the caller — this package ships no taxonomy of its
+own. TorchTag injects Vision's classification identifiers; ShadowTag's UCS terms are the same shape.
+That is not merely a preference: `spfk-processing`, which owns UCS, already depends on this package,
+so owning the vocabulary here would be a cycle.
+
+A curated tier is checked before the embedding tier, because embeddings encode *relatedness*, not
+synonymy — measured, `puppy` is closer to `kitten` than to `dog`. No threshold separates a synonym
+from a sibling, so the cases that matter most are stated outright. The groups are symmetric and kept
+deliberately small: the embedding tier covers the long tail, and every hand-written entry is a
+maintenance obligation.
+
+A lemmatizer reduces an inflected word to its dictionary form so expansion can reach terms the
+inflected spelling cannot — without it, `biking` never reaches `bicycle` and lands in the activity
+cluster instead. **The lemma is only used to look up candidates; it never replaces what the user
+typed.** This is deliberately narrower than lemmatizing inside `DelimitedQuery`, which is shared
+with ShadowTag's search and would change every search in both products rather than only the failed
+ones.
 
 ## Dependencies
 
