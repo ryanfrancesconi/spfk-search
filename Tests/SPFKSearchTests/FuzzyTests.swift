@@ -80,8 +80,6 @@ extension FuzzyTests {
 
         let result = try #require(obj.similarity(to: DelimitedQuery(string: "spinal pap"), matchConfig: nil))
         #expect(result > 0.8)
-
-        Log.debug(result)
     }
 
     @Test func similar() async throws {
@@ -89,8 +87,6 @@ extension FuzzyTests {
 
         let result = try #require(obj.similarity(to: DelimitedQuery(string: "haunted stonehenge moon"), minimumScore: 0.1))
         #expect(result == 0.9)
-
-        Log.debug(result)
     }
 
     @Test func midStringMatch() async throws {
@@ -98,8 +94,6 @@ extension FuzzyTests {
 
         let result = try #require(obj.similarity(to: DelimitedQuery(string: "banshees"), minimumScore: 0.1))
         #expect(result > 0.5)
-
-        Log.debug(result)
     }
 
     @Test func duplicate() async throws {
@@ -107,8 +101,6 @@ extension FuzzyTests {
 
         let result = try #require(obj.similarity(to: DelimitedQuery(string: "live"), minimumScore: 0.1))
         #expect(result > 0.5)
-
-        Log.debug(result)
     }
 
     @Test func minimal() async throws {
@@ -116,8 +108,6 @@ extension FuzzyTests {
 
         let result = try #require(obj.similarity(to: DelimitedQuery(string: "666"), minimumScore: 0.1))
         #expect(result > 0.7)
-
-        Log.debug(result)
     }
 
     @Test func firstElement() async throws {
@@ -256,29 +246,6 @@ extension FuzzyTests {
 
         let algorithm = QuerySearch.defaultConfig.algorithm
 
-        // Show raw scores for all pairs before the threshold sweep.
-        let diagConfig = MatchConfig(minScore: 0.0, algorithm: algorithm)
-        let diagMatcher = FuzzyMatcher(config: diagConfig)
-        var diagBuffer = diagMatcher.makeBuffer()
-
-        Log.debug("--- Raw pair scores (no minScore gate) ---")
-        Log.debug("GOOD pairs:")
-        for pair in goodPairs {
-            let q = diagMatcher.prepare(pair.query)
-            let score = diagMatcher.score(pair.candidate, against: q, buffer: &diagBuffer)?.score ?? 0
-            let lhs = pair.query.padding(toLength: 14, withPad: " ", startingAt: 0)
-            let rhs = pair.candidate.padding(toLength: 14, withPad: " ", startingAt: 0)
-            Log.debug(String(format: "  %@ → %@  %.4f", lhs, rhs, score))
-        }
-        Log.debug("BAD pairs:")
-        for pair in badPairs {
-            let q = diagMatcher.prepare(pair.query)
-            let score = diagMatcher.score(pair.candidate, against: q, buffer: &diagBuffer)?.score ?? 0
-            let lhs = pair.query.padding(toLength: 14, withPad: " ", startingAt: 0)
-            let rhs = pair.candidate.padding(toLength: 14, withPad: " ", startingAt: 0)
-            Log.debug(String(format: "  %@ → %@  %.4f", lhs, rhs, score))
-        }
-
         // Threshold sweep.
         let stride = 0.01
         var results: [(threshold: Double, goodPass: Int, badPass: Int)] = []
@@ -309,24 +276,8 @@ extension FuzzyTests {
             t += stride
         }
 
-        Log.debug("\nthreshold | good (\(goodPairs.count)) | bad (\(badPairs.count))")
-        Log.debug(String(repeating: "-", count: 34))
-        for r in results {
-            Log.debug(String(format: "  %.2f    |   %d        |  %d", r.threshold, r.goodPass, r.badPass))
-        }
-
         // Find first threshold where all bad pairs are blocked (primary goal).
         let allBadBlocked = results.first(where: { $0.badPass == 0 })
-
-        // Find the ideal: all good pass AND no bad pass.
-        let perfectCrossover = results.last(where: { $0.goodPass == goodPairs.count && $0.badPass == 0 })
-
-        if let c = perfectCrossover {
-            Log.debug(String(format: "\nPerfect crossover at %.2f: all %d good pass, 0 bad pass.", c.threshold, goodPairs.count))
-        } else if let b = allBadBlocked {
-            Log.debug(String(format: "\nAll bad pairs blocked from %.2f onward (%d/%d good still pass).", b.threshold, b.goodPass, goodPairs.count))
-            Log.debug("Gerund→base pairs score below threshold by design — the database covers them via alternate synonym entries.")
-        }
 
         // Must have some threshold where all noise matches are blocked.
         let blockThreshold = allBadBlocked?.threshold

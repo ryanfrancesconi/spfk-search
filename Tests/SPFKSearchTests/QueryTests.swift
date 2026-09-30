@@ -12,7 +12,6 @@ import Testing
 final class QueryTests: TestCaseModel {
     @Test func space() throws {
         let query = DelimitedQuery(string: "haunted stonehenge moon")
-        Log.debug(query)
 
         #expect(query.array == ["haunted stonehenge moon", "haunted", "stonehenge", "moon"])
     }
@@ -20,15 +19,11 @@ final class QueryTests: TestCaseModel {
     @Test func comma() throws {
         let query = DelimitedQuery(string: "cow, fish")
 
-        Log.debug(query)
-
         #expect(query.array == ["cow", "fish"])
     }
 
     @Test func malformed() throws {
         let query = DelimitedQuery(string: "   cow   , fish  ,,, , ,frog ,  , , ")
-
-        Log.debug(query)
 
         #expect(query.array == ["cow", "fish", "frog"])
     }
