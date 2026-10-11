@@ -95,7 +95,7 @@ extension SearchQueryParser {
     }
 
     /// `30d`, `2w`, `6mo`, `1y`.
-    static func relativeAmount(_ text: String) -> Result<SearchOperand, SearchQueryDiagnostic.Kind> {
+    public static func relativeAmount(_ text: String) -> Result<SearchOperand, SearchQueryDiagnostic.Kind> {
         let (amount, suffix) = splitNumber(text)
 
         guard let amount, amount > 0, amount == amount.rounded() else { return .failure(.invalidValue) }
@@ -112,13 +112,13 @@ extension SearchQueryParser {
         return .success(.relative(amount: Int(amount), unit: unit))
     }
 
-    static func period(_ text: String) -> SearchCalendarUnit? {
+    public static func period(_ text: String) -> SearchCalendarUnit? {
         SearchCalendarUnit(rawValue: text.lowercased())
     }
 
     /// A number in the units `kind` reads: seconds for a duration, bytes for a size, hertz for a
     /// frequency.
-    static func number(_ text: String, kind: SearchFieldKind) -> Double? {
+    public static func number(_ text: String, kind: SearchFieldKind) -> Double? {
         let (number, suffix) = splitNumber(text)
         guard let number else { return nil }
 

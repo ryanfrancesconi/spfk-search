@@ -148,7 +148,7 @@ public struct SearchQueryParser {
     }
 
     /// `items` joined by `AND`, with nested `AND` groups flattened and empty ones dropped.
-    static func all(_ items: [SearchCriteria]) -> SearchCriteria {
+    public static func all(_ items: [SearchCriteria]) -> SearchCriteria {
         let flattened: [SearchCriteria] = items.flatMap { item -> [SearchCriteria] in
             if case let .group(.all, children) = item { return children }
             return [item]
