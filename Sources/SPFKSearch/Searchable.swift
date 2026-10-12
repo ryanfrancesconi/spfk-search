@@ -26,9 +26,15 @@ public protocol Searchable: Sendable, Hashable {
     ///
     /// Place the most important field first — it receives a scoring boost.
     var searchableValue: SearchableValue { get }
+
+    /// Whether every field of ``searchableValue`` is already `normalized`, with `-` and `_` read as
+    /// spaces, so ``hasNearMatch(terms:)`` can skip folding each one again. `false` by default.
+    static var searchValueIsNormalized: Bool { get }
 }
 
 extension Searchable {
+    public static var searchValueIsNormalized: Bool { false }
+
     /// Returns `true` when this item has at least one searchable field that could plausibly
     /// match one of the given query terms — a fast O(n·m) gate before the full fuzzy scorer.
     ///
@@ -55,24 +61,23 @@ extension Searchable {
     /// - Returns: `true` if a potential match exists or all terms are too short to gate;
     ///   `false` when no term has a near-match in any field (safe to skip fuzzy scoring).
     public func hasNearMatch(terms: [String]) -> Bool {
-        let precheckTerms = terms.filter { $0.count >= 3 }
-        guard precheckTerms.isNotEmpty else { return true }
+        let prefixes = terms.filter { $0.count >= 3 }.map { term in
+            let normTerm = term
+                .replacingOccurrences(of: "-", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+            return String(normTerm.prefix(max(3, normTerm.count * 2 / 3)))
+        }
+        guard prefixes.isNotEmpty else { return true }
 
         return searchableValue.contains(where: { candidate in
             // Normalize case and separators so a lowercase query term like "explo"
             // matches a title-cased candidate like "Explosion" or an uppercase one
             // like "EXPLOSIONS". Terms from DelimitedQuery are already lowercased.
-            let normCandidate = candidate
+            let normCandidate = Self.searchValueIsNormalized ? candidate : candidate
                 .normalized
                 .replacingOccurrences(of: "-", with: " ")
                 .replacingOccurrences(of: "_", with: " ")
-            return precheckTerms.contains(where: { term in
-                let normTerm = term
-                    .replacingOccurrences(of: "-", with: " ")
-                    .replacingOccurrences(of: "_", with: " ")
-                let prefix = String(normTerm.prefix(max(3, normTerm.count * 2 / 3)))
-                return normCandidate.contains(prefix)
-            })
+            return prefixes.contains { normCandidate.contains($0) }
         })
     }
 
