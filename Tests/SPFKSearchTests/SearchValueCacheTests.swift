@@ -17,4 +17,16 @@ struct SearchValueCacheTests {
         #expect(second == ["zebra"])
         #expect(builds == 1)
     }
+
+    /// A value that is itself optional keeps its `nil` once built, rather than rebuilding.
+    @Test func keepsABuiltNil() {
+        let cache = FirstReadCache<String?>()
+        var builds = 0
+
+        _ = cache.value { builds += 1; return nil }
+        _ = cache.value { builds += 1; return "late" }
+
+        #expect(cache.value { "later" } == nil)
+        #expect(builds == 1)
+    }
 }
