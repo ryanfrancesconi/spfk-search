@@ -190,6 +190,75 @@ struct SearchQueryParserTests {
         #expect(result.diagnostics.count == 1)
     }
 
+    // MARK: - Operand limits
+
+    @Test func aRelativeAmountTooLargeForAnIntIsInvalid() {
+        for amount in ["99999999999999999999", String(repeating: "9", count: 400)] {
+            let text = "date in last \(amount)d"
+            let result = parse(text)
+            #expect(result.criteria == .text(text))
+            #expect(result.diagnostics.map(\.kind) == [.invalidValue])
+        }
+    }
+
+    @Test func aNonFiniteNumberIsInvalid() {
+        let nines = String(repeating: "9", count: 400)
+
+        for text in ["bpm > \(nines)", "bpm == 1..\(nines)", "size > 1\(String(repeating: "0", count: 300))GB"] {
+            let result = parse(text)
+            #expect(result.criteria == .text(text))
+            #expect(result.diagnostics.map(\.kind) == [.invalidValue])
+        }
+    }
+
+    @Test(arguments: [
+        ("6mo", SearchOperand.relative(amount: 6, unit: .month)),
+        ("2weeks", .relative(amount: 2, unit: .week)),
+        ("1y", .relative(amount: 1, unit: .year)),
+    ])
+    func relativeAmountsReadTheirUnit(value: String, expected: SearchOperand) {
+        #expect(criteria("date in last \(value)") == rule("tag.date", .inTheLast, expected))
+    }
+
+    @Test(arguments: ["0d", "-3d", "1.5d", "3x"])
+    func aRelativeAmountMustBeAPositiveWholeNumberOfAUnit(value: String) {
+        let text = "date in last \(value)"
+        let result = parse(text)
+        #expect(result.criteria == .text(text))
+        #expect(result.diagnostics.map(\.kind) == [.invalidValue])
+    }
+
+    @Test func unitSuffixesScaleToTheFieldsBaseUnit() {
+        #expect(criteria("duration < 1h") == rule("format.duration", .lessThan, .number(3600)))
+        #expect(criteria("size > 1.5GB") == rule("file.size", .greaterThan, .number(1_500_000_000)))
+        #expect(criteria("size > 2KB") == rule("file.size", .greaterThan, .number(2000)))
+        #expect(criteria("\"sample rate\" == 48khz") == rule("format.sampleRate", .is, .number(48000)))
+
+        let result = parse("bpm > 10k")
+        #expect(result.criteria == .text("bpm > 10k"))
+        #expect(result.diagnostics.map(\.kind) == [.invalidValue])
+    }
+
+    @Test func aListOnAFieldWithoutOptionsIsAnInvalidOperator() {
+        let result = parse("genre in (a, b)")
+        #expect(result.criteria == .text("genre in (a, b)"))
+        #expect(result.diagnostics.map(\.kind) == [.invalidOperator])
+    }
+
+    @Test func anEmptyListIsAnInvalidValue() {
+        let result = parse("type in ()")
+        #expect(result.criteria == .text("type in ()"))
+        #expect(result.diagnostics.map(\.kind) == [.invalidValue])
+    }
+
+    // MARK: - Negation edges
+
+    @Test func aDashBeforeAClosingParenthesisIsText() {
+        let result = parse("(rain -)")
+        #expect(result.criteria == .group(.all, [.text("rain"), .text("-")]))
+        #expect(result.diagnostics.isEmpty)
+    }
+
     // MARK: - Persisted form
 
     private static let encoder: JSONEncoder = {

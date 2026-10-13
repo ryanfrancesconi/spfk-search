@@ -94,11 +94,13 @@ extension SearchQueryParser {
         }
     }
 
-    /// `30d`, `2w`, `6mo`, `1y`.
+    /// `30d`, `2w`, `6mo`, `1y`, below the largest amount the persisted form reads.
     public static func relativeAmount(_ text: String) -> Result<SearchOperand, SearchQueryDiagnostic.Kind> {
         let (amount, suffix) = splitNumber(text)
 
-        guard let amount, amount > 0, amount == amount.rounded() else { return .failure(.invalidValue) }
+        guard let amount, amount > 0, amount == amount.rounded(), amount < Double(Int32.max) else {
+            return .failure(.invalidValue)
+        }
 
         let unit: SearchCalendarUnit? = switch suffix {
         case "d", "day", "days": .day
@@ -116,8 +118,8 @@ extension SearchQueryParser {
         SearchCalendarUnit(rawValue: text.lowercased())
     }
 
-    /// A number in the units `kind` reads: seconds for a duration, bytes for a size, hertz for a
-    /// frequency.
+    /// A finite number in the units `kind` reads: seconds for a duration, bytes for a size, hertz
+    /// for a frequency.
     public static func number(_ text: String, kind: SearchFieldKind) -> Double? {
         let (number, suffix) = splitNumber(text)
         guard let number else { return nil }
@@ -153,7 +155,8 @@ extension SearchQueryParser {
             suffix.isEmpty ? 1 : nil
         }
 
-        return multiplier.map { number * $0 }
+        guard let scaled = multiplier.map({ number * $0 }), scaled.isFinite else { return nil }
+        return scaled
     }
 
     /// The leading number and the lowercased text after it.
