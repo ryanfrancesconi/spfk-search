@@ -26,4 +26,13 @@ public indirect enum SearchCriteria: Sendable, Hashable {
         case let .text(text): text.trimmingCharacters(in: .whitespaces).isEmpty
         }
     }
+
+    /// The playlists the rules name, at any depth: what has to be resolved before compiling.
+    public var referencedPlaylistIDs: Set<UUID> {
+        switch self {
+        case let .group(_, children): children.reduce(into: []) { $0.formUnion($1.referencedPlaylistIDs) }
+        case let .rule(rule): if case let .playlists(ids) = rule.operand { Set(ids) } else { [] }
+        case .text, .unknown: []
+        }
+    }
 }

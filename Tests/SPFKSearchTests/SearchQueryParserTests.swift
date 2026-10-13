@@ -208,7 +208,7 @@ struct SearchQueryParserTests {
                 rule("file.modified", .inTheLast, .relative(amount: 30, unit: .day)),
             ]),
             .group(.none, [rule("color", .isAnyOf, .list(["red", "blue"]))]),
-            rule("playlist", .is, .playlist(UUID())),
+            rule("playlist", .isIn, .playlists([UUID(), UUID()])),
             rule("state.dirty", .isTrue),
         ])
 
@@ -250,6 +250,43 @@ struct SearchQueryParserTests {
             rule("file.modified", .inThisPeriod, .period(.week)),
             rule("rating", .isEmpty),
         ]))
+    }
+
+    @Test func aPlaylistRuleIsPinnedAndReadsItsUUIDs() throws {
+        let first = try #require(UUID(uuidString: "00000000-0000-0000-0000-0000000000A1"))
+        let second = try #require(UUID(uuidString: "00000000-0000-0000-0000-0000000000B2"))
+        let json = #"{"field":"playlist","operand":{"type":"playlists","value":["\#(first.uuidString)","\#(second.uuidString)"]},"operator":"isNotIn","type":"rule"}"#
+
+        let decoded = try JSONDecoder().decode(SearchCriteria.self, from: Data(json.utf8))
+
+        #expect(decoded == rule("playlist", .isNotIn, .playlists([first, second])))
+        #expect(String(decoding: try Self.encoder.encode(decoded), as: UTF8.self) == json)
+        #expect(decoded.referencedPlaylistIDs == [first, second])
+    }
+
+    @Test func aPlaylistOperandWithABadUUIDIsAnUnknownNode() throws {
+        let json = #"{"field":"playlist","operand":{"type":"playlists","value":["not a uuid"]},"operator":"isIn","type":"rule"}"#
+
+        let decoded = try JSONDecoder().decode(SearchCriteria.self, from: Data(json.utf8))
+
+        guard case .unknown = decoded else {
+            Issue.record("expected an unknown node, got \(decoded)")
+            return
+        }
+        #expect(decoded.referencedPlaylistIDs.isEmpty)
+    }
+
+    @Test func referencedPlaylistsAreCollectedAtAnyDepth() {
+        let first = UUID()
+        let second = UUID()
+
+        let criteria = SearchCriteria.group(.all, [
+            rule("playlist", .isIn, .playlists([first])),
+            .group(.none, [rule("playlist", .isNotIn, .playlists([first, second])), .text("rain")]),
+            rule("tag.bpm", .is, .number(120)),
+        ])
+
+        #expect(criteria.referencedPlaylistIDs == [first, second])
     }
 
     // MARK: - Dates

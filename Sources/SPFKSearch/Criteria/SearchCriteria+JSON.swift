@@ -104,9 +104,11 @@ extension SearchOperand {
         case "period":
             guard let unit = json["unit"]?.string.flatMap(SearchCalendarUnit.init(rawValue:)) else { return nil }
             self = .period(unit)
-        case "playlist":
-            guard let uuid = json["value"]?.string.flatMap(UUID.init(uuidString:)) else { return nil }
-            self = .playlist(uuid)
+        case "playlists":
+            guard case let .array(items)? = json["value"] else { return nil }
+            let ids = items.compactMap { $0.string.flatMap(UUID.init(uuidString:)) }
+            guard ids.count == items.count else { return nil }
+            self = .playlists(ids)
         default:
             return nil
         }
@@ -132,8 +134,8 @@ extension SearchOperand {
             .object(["type": .string("relative"), "amount": .number(Double(amount)), "unit": .string(unit.rawValue)])
         case let .period(unit):
             .object(["type": .string("period"), "unit": .string(unit.rawValue)])
-        case let .playlist(uuid):
-            .object(["type": .string("playlist"), "value": .string(uuid.uuidString)])
+        case let .playlists(ids):
+            .object(["type": .string("playlists"), "value": .array(ids.map { .string($0.uuidString) })])
         }
     }
 }

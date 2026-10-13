@@ -20,6 +20,9 @@ public enum SearchFieldKind: Sendable, Hashable {
     /// Matched by `ColorName`.
     case color
 
+    /// Membership of a set of playlists, by id. Chosen in the builder only: a title cannot name one.
+    case playlist
+
     /// The operators a rule on this kind can use.
     ///
     /// `contains` and `doesNotContain` are also accepted for every kind from the legacy `:`,
@@ -39,6 +42,8 @@ public enum SearchFieldKind: Sendable, Hashable {
             [.is, .isNot, .isAnyOf, .isEmpty, .isNotEmpty]
         case .list:
             [.contains, .doesNotContain, .isEmpty, .isNotEmpty]
+        case .playlist:
+            [.isIn, .isNotIn]
         }
     }
 }

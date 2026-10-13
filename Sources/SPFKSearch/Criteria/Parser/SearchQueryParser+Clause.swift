@@ -107,6 +107,8 @@ extension SearchQueryParser {
             boolComparison(symbol: symbol, value: value)
         case .enumeration, .color:
             choiceComparison(symbol: symbol, value: value, kind: resolution.kind)
+        case .playlist:
+            .failure(.invalidOperator)
         }
 
         return typed.flatMap { op, operand in

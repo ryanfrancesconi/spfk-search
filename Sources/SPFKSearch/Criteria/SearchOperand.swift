@@ -13,5 +13,6 @@ public indirect enum SearchOperand: Sendable, Hashable {
     case date(SearchDate)
     case relative(amount: Int, unit: SearchCalendarUnit)
     case period(SearchCalendarUnit)
-    case playlist(UUID)
+    /// Persisted sorted by `uuidString`, so one set chosen in two orders is one operand.
+    case playlists([UUID])
 }

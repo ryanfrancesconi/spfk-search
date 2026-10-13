@@ -20,6 +20,8 @@ public enum SearchOperator: String, Sendable, Hashable, CaseIterable {
     case inTheLast
     case inThisPeriod
     case isAnyOf
+    case isIn
+    case isNotIn
     case isTrue
     case isFalse
 }
