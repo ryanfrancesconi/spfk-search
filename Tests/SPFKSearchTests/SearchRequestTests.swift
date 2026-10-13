@@ -65,4 +65,71 @@ struct SearchRequestTests {
         #expect(object?["text"] as? String == "rain")
         #expect(try JSONDecoder().decode(SearchRequest.self, from: data) == SearchRequest(text: "rain"))
     }
+
+    // MARK: - Scope
+
+    private let ambience = UUID(uuidString: "00000000-0000-0000-0000-00000000000A") ?? UUID()
+    private let foley = UUID(uuidString: "00000000-0000-0000-0000-00000000000B") ?? UUID()
+
+    @Test(arguments: [
+        SearchPlaylistScope.library,
+        .displayed,
+        SearchPlaylistScope(includesDisplayed: false, playlists: [UUID(), UUID()]),
+        SearchPlaylistScope(includesDisplayed: true, playlists: [UUID()]),
+    ])
+    func scopeRoundTrips(scope: SearchPlaylistScope) throws {
+        let request = SearchRequest(criteria: token, text: "rain", scope: scope)
+        let data = try JSONEncoder().encode(request)
+        #expect(try JSONDecoder().decode(SearchRequest.self, from: data) == request)
+    }
+
+    @Test func requestWithoutScopeKeyDecodesToNil() throws {
+        let data = Data(#"{"text": "rain"}"#.utf8)
+        let request = try JSONDecoder().decode(SearchRequest.self, from: data)
+        #expect(request.scope == nil)
+        #expect(request.text == "rain")
+    }
+
+    @Test func unknownScopeDecodesToNil() throws {
+        let data = Data(#"{"text": "rain", "scope": {"type": "future", "value": 3}}"#.utf8)
+        let request = try JSONDecoder().decode(SearchRequest.self, from: data)
+        #expect(request.scope == nil)
+        #expect(request.text == "rain")
+    }
+
+    @Test func nilScopeIsOmitted() throws {
+        let data = try JSONEncoder().encode(SearchRequest(text: "rain"))
+        let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        #expect(object?["scope"] == nil)
+    }
+
+    @Test func chosenNothingIsLibrary() {
+        #expect(SearchPlaylistScope(includesDisplayed: false, playlists: []) == .library)
+    }
+
+    @Test func chosenOrderAndDuplicatesDoNotMatter() {
+        let one = SearchPlaylistScope(includesDisplayed: false, playlists: [foley, ambience, foley])
+        let two = SearchPlaylistScope(includesDisplayed: false, playlists: [ambience, foley])
+        #expect(one == two)
+        #expect(one.playlists == [ambience, foley])
+    }
+
+    @Test func displayedAloneFiltersInPlace() {
+        #expect(SearchPlaylistScope.displayed.filtersInPlace(displayedPlaylist: nil))
+        #expect(SearchPlaylistScope.displayed.filtersInPlace(displayedPlaylist: ambience))
+        #expect(!SearchPlaylistScope.library.filtersInPlace(displayedPlaylist: ambience))
+    }
+
+    @Test(arguments: [false, true])
+    func exactlyTheDisplayedPlaylistFiltersInPlace(includesDisplayed: Bool) {
+        let scope = SearchPlaylistScope(includesDisplayed: includesDisplayed, playlists: [ambience])
+        #expect(scope.filtersInPlace(displayedPlaylist: ambience))
+        #expect(!scope.filtersInPlace(displayedPlaylist: foley))
+        #expect(!scope.filtersInPlace(displayedPlaylist: nil))
+    }
+
+    @Test func theDisplayedPlaylistAndAnotherBuildResults() {
+        let scope = SearchPlaylistScope(includesDisplayed: true, playlists: [ambience, foley])
+        #expect(!scope.filtersInPlace(displayedPlaylist: ambience))
+    }
 }
