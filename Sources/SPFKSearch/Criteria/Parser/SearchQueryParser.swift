@@ -118,7 +118,9 @@ public struct SearchQueryParser {
 
         if rest.isEmpty {
             // A lone dash negates whatever touches it, as in `-"rain on leaves"` or `-(a OR b)`.
-            guard let next = self.token(at: index + 1), next.range.lowerBound == token.range.upperBound else {
+            guard let next = self.token(at: index + 1), next.kind != .close,
+                  next.range.lowerBound == token.range.upperBound
+            else {
                 return nil
             }
             index += 1
