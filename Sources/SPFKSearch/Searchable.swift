@@ -61,24 +61,52 @@ extension Searchable {
     /// - Returns: `true` if a potential match exists or all terms are too short to gate;
     ///   `false` when no term has a near-match in any field (safe to skip fuzzy scoring).
     public func hasNearMatch(terms: [String]) -> Bool {
-        let prefixes = terms.filter { $0.count >= 3 }.map { term in
+        let prefixes = Self.nearMatchPrefixes(terms)
+        guard prefixes.isNotEmpty else { return true }
+
+        return searchableValue.contains { candidate in
+            let folded = Self.foldedForNearMatch(candidate)
+            return prefixes.contains { folded.contains($0) }
+        }
+    }
+
+    /// ``hasNearMatch(terms:)`` for each of `query`'s ``DelimitedQuery/termGroups``: `true` when
+    /// every group has a near-match in some field, or one of its
+    /// ``DelimitedQuery/wholeQueryTerms`` does.
+    public func hasNearMatch(query: DelimitedQuery) -> Bool {
+        guard query.termGroups.count > 1 else { return hasNearMatch(terms: query.array) }
+
+        let groups = query.termGroups
+            .map(Self.nearMatchPrefixes)
+            .filter(\.isNotEmpty)
+
+        guard groups.isNotEmpty else { return true }
+
+        let candidates = searchableValue.map(Self.foldedForNearMatch)
+
+        func anyContains(_ prefixes: [String]) -> Bool {
+            candidates.contains { candidate in prefixes.contains { candidate.contains($0) } }
+        }
+
+        return groups.allSatisfy(anyContains) || anyContains(Self.nearMatchPrefixes(query.wholeQueryTerms))
+    }
+
+    /// The leading two-thirds of each term of at least three characters, separators flattened.
+    private static func nearMatchPrefixes(_ terms: [String]) -> [String] {
+        terms.filter { $0.count >= 3 }.map { term in
             let normTerm = term
                 .replacingOccurrences(of: "-", with: " ")
                 .replacingOccurrences(of: "_", with: " ")
             return String(normTerm.prefix(max(3, normTerm.count * 2 / 3)))
         }
-        guard prefixes.isNotEmpty else { return true }
+    }
 
-        return searchableValue.contains(where: { candidate in
-            // Normalize case and separators so a lowercase query term like "explo"
-            // matches a title-cased candidate like "Explosion" or an uppercase one
-            // like "EXPLOSIONS". Terms from DelimitedQuery are already lowercased.
-            let normCandidate = Self.searchValueIsNormalized ? candidate : candidate
-                .normalized
-                .replacingOccurrences(of: "-", with: " ")
-                .replacingOccurrences(of: "_", with: " ")
-            return prefixes.contains { normCandidate.contains($0) }
-        })
+    /// Folded the way query terms are, so a lowercase `"explo"` finds `"EXPLOSIONS"`.
+    private static func foldedForNearMatch(_ candidate: String) -> String {
+        searchValueIsNormalized ? candidate : candidate
+            .normalized
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
     }
 
     /// Returns the fuzzy similarity score between this instance and the query,

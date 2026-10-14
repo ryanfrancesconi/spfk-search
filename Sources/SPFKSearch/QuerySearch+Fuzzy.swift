@@ -26,12 +26,14 @@ extension QuerySearch {
         let matcher = FuzzyMatcher(config: matchConfig)
         var buffer = matcher.makeBuffer()
         let preparedTerms = query.array.map { matcher.prepare($0) }
+        let requirement = termRequirement(of: query)
 
         var results: [(element: T, score: UnitInterval)] = []
         for candidate in candidates {
             let score = Self.scoreCandidate(
                 searchableValue: candidate.searchableValue,
                 preparedTerms: preparedTerms,
+                requirement: requirement,
                 matcher: matcher,
                 buffer: &buffer,
                 minScore: matchConfig.minScore
@@ -67,6 +69,7 @@ extension QuerySearch {
 
         let matcher = FuzzyMatcher(config: matchConfig)
         let preparedTerms = query.array.map { matcher.prepare($0) }
+        let requirement = termRequirement(of: query)
         let minScore = matchConfig.minScore
 
         let cpuCount = max(1, ProcessInfo.processInfo.activeProcessorCount)
@@ -86,6 +89,7 @@ extension QuerySearch {
                         let score = scoreCandidate(
                             searchableValue: candidate.searchableValue,
                             preparedTerms: preparedTerms,
+                            requirement: requirement,
                             matcher: matcher,
                             buffer: &buffer,
                             minScore: minScore
@@ -114,10 +118,30 @@ extension QuerySearch {
 
     // MARK: - Internal
 
+    /// What a candidate must match, as indexes into a query's ``DelimitedQuery/array``.
+    struct TermRequirement: Sendable {
+        /// Every group needs a matching term. Empty when any one term is enough.
+        var groups: [[Int]] = []
+
+        /// Each of these matching satisfies every group.
+        var wholeQuery: [Int] = []
+    }
+
+    static func termRequirement(of query: DelimitedQuery) -> TermRequirement {
+        guard query.termGroups.count > 1 else { return TermRequirement() }
+
+        let index = { (term: String) in query.array.firstIndex(of: term) }
+
+        return TermRequirement(
+            groups: query.termGroups.map { $0.compactMap(index) },
+            wholeQuery: query.wholeQueryTerms.compactMap(index)
+        )
+    }
+
     /// Scores a single candidate's searchable fields against pre-prepared query terms.
     ///
-    /// Returns the highest score across all (term × field) pairs that meets `minScore`,
-    /// or `0` if no pair does. Early-exits as soon as a perfect score (1.0) is found.
+    /// Returns the highest score across all (term × field) pairs that meets `minScore`, or `0`
+    /// when none does — or when one of `requirement`'s groups has no term that does.
     ///
     /// The first searchable element (j==0, typically the primary category name) receives a
     /// 1.1× boost when the query term is a semantically exact match (`ScoredMatch.kind == .exact`),
@@ -126,40 +150,97 @@ extension QuerySearch {
     internal static func scoreCandidate(
         searchableValue: SearchableValue,
         preparedTerms: [FuzzyQuery],
+        requirement: TermRequirement = TermRequirement(),
+        matcher: FuzzyMatcher,
+        buffer: inout ScoringBuffer,
+        minScore: UnitInterval
+    ) -> UnitInterval {
+        combinedScore(termCount: preparedTerms.count, requirement: requirement) { i in
+            termScore(
+                searchableValue: searchableValue,
+                fuzzyQuery: preparedTerms[i],
+                boostsExactOnly: true,
+                matcher: matcher,
+                buffer: &buffer,
+                minScore: minScore
+            )
+        }
+    }
+
+    /// The best of `score` over every term, or `0` when a required group has no term above `0`
+    /// and no whole-query term does either.
+    private static func combinedScore(
+        termCount: Int,
+        requirement: TermRequirement,
+        score: (Int) -> UnitInterval
+    ) -> UnitInterval {
+        guard requirement.groups.isNotEmpty else {
+            var topScore: UnitInterval = 0
+            for i in 0 ..< termCount {
+                topScore = max(topScore, score(i))
+                if topScore >= 1.0 { break }
+            }
+            return topScore
+        }
+
+        var scores = [UnitInterval?](repeating: nil, count: termCount)
+
+        func memoized(_ i: Int) -> UnitInterval {
+            if let known = scores[i] { return known }
+            let value = score(i)
+            scores[i] = value
+            return value
+        }
+
+        let matchesWholeQuery = requirement.wholeQuery.contains { memoized($0) > 0 }
+
+        if !matchesWholeQuery {
+            for group in requirement.groups {
+                guard group.contains(where: { memoized($0) > 0 }) else { return 0 }
+            }
+        }
+
+        var topScore: UnitInterval = 0
+        for i in 0 ..< termCount {
+            topScore = max(topScore, memoized(i))
+            if topScore >= 1.0 { break }
+        }
+        return topScore
+    }
+
+    /// One term's best weighted score across the fields, or `0` below `minScore`.
+    ///
+    /// - Parameter boostsExactOnly: boost the first field only on an exact match, rather than on
+    ///   any match.
+    private static func termScore(
+        searchableValue: SearchableValue,
+        fuzzyQuery: FuzzyQuery,
+        boostsExactOnly: Bool,
         matcher: FuzzyMatcher,
         buffer: inout ScoringBuffer,
         minScore: UnitInterval
     ) -> UnitInterval {
         var topScore: UnitInterval = 0
         let searchableCount = searchableValue.count
-        var done = false
 
-        for fuzzyQuery in preparedTerms {
-            if done { break }
-            for j in 0 ..< searchableCount {
-                guard let wordScore = matcher.score(searchableValue[j], against: fuzzyQuery, buffer: &buffer) else { continue }
+        for j in 0 ..< searchableCount {
+            guard let wordScore = matcher.score(searchableValue[j], against: fuzzyQuery, buffer: &buffer) else { continue }
 
-                var score = wordScore.score
-                if searchableCount > 1 {
-                    if j == 0 {
-                        // Boost only on a semantically exact match (same length, every
-                        // char matches). Prefix/fuzzy matches get the 0.9× synonym
-                        // penalty — this prevents short terms like "bird"→"BIRDS" or
-                        // "metro"→"METAL" from amplifying to 1.0 via the j==0 boost
-                        // and drowning out exact synonym matches in j>0 fields.
-                        score *= wordScore.kind == .exact ? 1.1 : 0.9
-                    } else {
-                        score *= 0.9
-                    }
-                    score = min(score, 1.0)
+            var score = wordScore.score
+            if searchableCount > 1 {
+                if j == 0 {
+                    score *= !boostsExactOnly || wordScore.kind == .exact ? 1.1 : 0.9
+                } else {
+                    score *= 0.9
                 }
+                score = min(score, 1.0)
+            }
 
-                guard score >= minScore else { continue }
+            guard score >= minScore else { continue }
 
-                if score > topScore {
-                    topScore = score
-                    if topScore >= 1.0 { done = true; break }
-                }
+            if score > topScore {
+                topScore = score
+                if topScore >= 1.0 { break }
             }
         }
 
@@ -171,46 +252,26 @@ extension QuerySearch {
     /// Iterates all query terms against all searchable strings using `FuzzyMatcher`.
     /// The first searchable element receives a 1.1x boost; subsequent elements
     /// receive a 0.9x penalty. Returns the highest score that meets ``minimumScore``,
-    /// clamped to 0–1.
+    /// clamped to 0–1, or `0` when a required term group has no match.
     ///
     /// Called automatically during ``QuerySearch/init(searchableValue:query:matchConfig:)``;
     /// the result is stored in ``similarity``.
     ///
     /// - Returns: The best match score (0–1), or `0` if no term meets the threshold.
     public func fuzzySimilarity() -> UnitInterval {
-        var topScore: UnitInterval = 0
-
         let matcher = FuzzyMatcher(config: matchConfig)
         var buffer = matcher.makeBuffer()
+        let preparedTerms = query.array.map { matcher.prepare($0) }
 
-        let queryCount = query.array.count
-        let searchableCount = searchableValue.count
-
-        for i in 0 ..< queryCount {
-            let word = query.array[i]
-
-            let fuzzyQuery = matcher.prepare(word)
-
-            for j in 0 ..< searchableCount {
-                let value = searchableValue[j]
-
-                guard let wordScore = matcher.score(value, against: fuzzyQuery, buffer: &buffer) else { continue }
-
-                var score = wordScore.score
-
-                // give extra weight if is the first element, generally filename
-                if searchableCount > 1 {
-                    score *= (j == 0 ? 1.1 : 0.9)
-                    score = min(score, 1.0)
-                }
-
-                guard score >= matchConfig.minScore else { continue }
-
-                if score > topScore {
-                    topScore = score
-                    if topScore >= 1.0 { return 1.0 }
-                }
-            }
+        let topScore = Self.combinedScore(termCount: preparedTerms.count, requirement: Self.termRequirement(of: query)) { i in
+            Self.termScore(
+                searchableValue: searchableValue,
+                fuzzyQuery: preparedTerms[i],
+                boostsExactOnly: false,
+                matcher: matcher,
+                buffer: &buffer,
+                minScore: matchConfig.minScore
+            )
         }
 
         return topScore.clamped(to: 0 ... 1)
