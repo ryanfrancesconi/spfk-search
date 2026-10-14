@@ -72,7 +72,8 @@ extension Searchable {
 
     /// ``hasNearMatch(terms:)`` for each of `query`'s ``DelimitedQuery/termGroups``: `true` when
     /// every group has a near-match in some field, or one of its
-    /// ``DelimitedQuery/wholeQueryTerms`` does.
+    /// ``DelimitedQuery/wholeQueryTerms`` does. A group of short words only is skipped; when every
+    /// group is, only the whole-query terms gate.
     public func hasNearMatch(query: DelimitedQuery) -> Bool {
         guard query.termGroups.count > 1 else { return hasNearMatch(terms: query.array) }
 
@@ -80,7 +81,9 @@ extension Searchable {
             .map(Self.nearMatchPrefixes)
             .filter(\.isNotEmpty)
 
-        guard groups.isNotEmpty else { return true }
+        let wholeQuery = Self.nearMatchPrefixes(query.wholeQueryTerms)
+
+        guard groups.isNotEmpty || wholeQuery.isNotEmpty else { return true }
 
         let candidates = searchableValue.map(Self.foldedForNearMatch)
 
@@ -88,7 +91,7 @@ extension Searchable {
             candidates.contains { candidate in prefixes.contains { candidate.contains($0) } }
         }
 
-        return groups.allSatisfy(anyContains) || anyContains(Self.nearMatchPrefixes(query.wholeQueryTerms))
+        return (groups.isNotEmpty && groups.allSatisfy(anyContains)) || anyContains(wholeQuery)
     }
 
     /// The leading two-thirds of each term of at least three characters, separators flattened.

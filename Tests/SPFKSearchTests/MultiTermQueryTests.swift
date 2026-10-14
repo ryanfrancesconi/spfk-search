@@ -70,6 +70,13 @@ final class MultiTermQueryTests: TestCaseModel {
         #expect(File(name: "Airport_Runway_OCP-1457-007").similarity(to: query) ?? 0 > 0)
     }
 
+    @Test func shortWordsOnlyGateOnThePhrase() {
+        let query = DelimitedQuery(string: "pa oc")
+
+        #expect(File(name: "Airport_PA_OCP-1222-026-10").hasNearMatch(query: query))
+        #expect(!File(name: "LAX_Airport_Terminal_OCM-0021-020").hasNearMatch(query: query))
+    }
+
     @Test func synonymsStandInForTheirOwnWord() {
         let query = DelimitedQuery(string: "airport runway").expanded { group in
             group.contains("runway") ? ["terminal"] : []
