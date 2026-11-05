@@ -36,17 +36,6 @@ public struct SynonymConfig: Sendable {
     /// Maximum expansion terms contributed by any single query term, best (closest) first.
     public var maximumExpansionsPerTerm: Int
 
-    /// Multiplier applied to every score produced by an expanded pass, so a synonym match can
-    /// never score as high as a literal one.
-    ///
-    /// The justification is provenance rather than semantic distance: `bike` and `bicycle` mean
-    /// the same thing, but `bicycle` is still not the word the user typed — the app inferred it
-    /// on their behalf. So this applies to curated and embedding-derived terms alike.
-    ///
-    /// Callers must apply it *after* their minimum-score filter. Scaling before the filter turns
-    /// it into a stricter threshold that discards marginal matches instead of demoting them.
-    public var scoreCeiling: UnitInterval
-
     /// Whether the curated table tier runs.
     public var usesCuratedTable: Bool
 
@@ -58,13 +47,11 @@ public struct SynonymConfig: Sendable {
     public init(
         maximumDistance: Double = 0.25,
         maximumExpansionsPerTerm: Int = 5,
-        scoreCeiling: UnitInterval = 0.8,
         usesCuratedTable: Bool = true,
         usesEmbedding: Bool = true
     ) {
         self.maximumDistance = maximumDistance
         self.maximumExpansionsPerTerm = maximumExpansionsPerTerm
-        self.scoreCeiling = scoreCeiling
         self.usesCuratedTable = usesCuratedTable
         self.usesEmbedding = usesEmbedding
     }
