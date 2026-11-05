@@ -23,9 +23,8 @@ This package parses and scores; it holds no files.
 
 - The encoded form of `SearchCriteria` is schema. Smart playlists persist it, so changing it is a
   migration.
-- Synonym expansion is a fallback: run it only when the literal search found nothing, and score
-  each way of reaching a result within its own band, below the literal one, or an inferred match
-  outranks what the user typed. The master vocabulary is the labels of Apple's image and sound
+- Score each way of reaching a result through synonym expansion within its own band, below the
+  literal one, or an inferred match outranks what the user typed. The master vocabulary is the labels of Apple's image and sound
   classifiers; a product adds its own subject matter's terms to it.
 
 ## About

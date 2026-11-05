@@ -144,7 +144,8 @@ public struct SynonymVocabulary: Sendable {
 
 extension SynonymVocabulary {
     /// Vision's image labels and SoundAnalysis's sound labels: the words Detect Keywords writes
-    /// in both products. Built on first use, since only a search that found nothing reads it.
+    /// in both products. Built on first use; build it off the main thread before a synchronous
+    /// caller reads it.
     ///
     /// A classifier that cannot report its labels is logged and left out, so this may be empty.
     public static let master: SynonymVocabulary = {

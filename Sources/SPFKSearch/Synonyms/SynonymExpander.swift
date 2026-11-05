@@ -4,15 +4,15 @@ import Foundation
 import NaturalLanguage
 import SPFKBase
 
-/// Produces additional query terms for a search that found nothing, so `"bike"` can reach a file
-/// whose only keyword is `"bicycle"`.
+/// Produces additional query terms, so `"bike"` can reach a file whose only keyword is
+/// `"bicycle"`.
 ///
 /// Two tiers run per term: ``CuratedSynonyms`` first, and if it contributes nothing, an
 /// `NLEmbedding` scan constrained to the injected ``SynonymVocabulary``. Both are restricted to
 /// vocabulary terms, so expansion never proposes a word no file could contain.
 ///
-/// **This is a fallback**: run it only when the literal search found nothing, and score what each
-/// tier reaches within its ``SearchMatchTier`` band, so an inferred match never outranks a literal one.
+/// Score what each tier reaches within its ``SearchMatchTier`` band, and only over what the
+/// literal pass missed, so an inferred match never outranks or duplicates a literal one.
 ///
 /// ```swift
 /// let expander = SynonymExpander(vocabulary: .master)

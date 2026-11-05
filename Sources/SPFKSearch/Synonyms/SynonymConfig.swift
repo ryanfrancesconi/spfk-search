@@ -3,10 +3,8 @@
 import Foundation
 import SPFKBase
 
-/// Tuning for ``SynonymExpander``.
-///
-/// Synonym expansion is a *fallback*: it runs only when a literal search returned no results at
-/// all. Nothing here affects a search that found something.
+/// Tuning for ``SynonymExpander``. Nothing here changes what a search finds as typed: related
+/// matches only join it, ranked below.
 public struct SynonymConfig: Sendable {
     /// Maximum distance for a vocabulary term to be accepted as an expansion of a query term.
     ///
