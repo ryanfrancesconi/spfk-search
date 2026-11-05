@@ -2,21 +2,19 @@
 
 import Foundation
 import NaturalLanguage
+import SoundAnalysis
 import SPFKBase
+import Vision
 
 /// The closed set of terms synonym expansion is allowed to propose.
 ///
 /// Expansion is constrained to a vocabulary rather than taking `NLEmbedding`'s free nearest
 /// neighbors, which return the top matches across the entire embedding and can only ever suggest
-/// words no file contains.
-///
-/// The vocabulary is supplied by the caller — `spfk-search` ships no taxonomy of its own. TorchTag
-/// injects Vision's classification identifiers; ShadowTag's UCS terms are the same shape. This is
-/// not merely a preference: `spfk-processing` (which owns UCS) already depends on `spfk-search`,
-/// so owning that vocabulary here would be a dependency cycle.
+/// words no file contains. ``master`` holds the classifier labels both products write as keywords;
+/// a product composes its own subject matter onto it with ``adding(identifiers:)``.
 ///
 /// ```swift
-/// let vocabulary = SynonymVocabulary(identifiers: try VNClassifyImageRequest().supportedIdentifiers())
+/// let vocabulary = SynonymVocabulary.master.adding(identifiers: ["riser", "whoosh"])
 /// ```
 public struct SynonymVocabulary: Sendable {
     /// One vocabulary entry, in both of the forms expansion needs.
@@ -43,32 +41,55 @@ public struct SynonymVocabulary: Sendable {
 
     public let terms: [Term]
 
-    /// Builds a vocabulary from raw classification identifiers.
+    private init(terms: [Term]) {
+        self.terms = terms
+    }
+
+    /// Builds a vocabulary from raw classification identifiers, each match form embedded once.
     ///
     /// Identifiers are decomposed with ``Swift/String/snakeCaseWords`` — the same parse that
     /// produces the stored keyword form — so the match form and the embedding decomposition
-    /// cannot drift apart.
-    ///
-    /// Casing is not normalized here and does not need to be: matching folds case on both sides
-    /// (`DelimitedQuery` folds the query, searchable values are folded when built), so only word
-    /// separation matters.
+    /// cannot drift apart. Matching folds case on both sides, so only word separation matters.
     ///
     /// - Parameter identifiers: Raw identifiers, e.g. `["toaster_oven", "bicycle"]`.
     public init(identifiers: [String]) {
-        let embedding = NLEmbedding.wordEmbedding(for: .english)
+        self.init(terms: Self.embed(identifiers, excluding: []))
+    }
 
-        terms = identifiers.compactMap { identifier in
+    /// The union with `other`, keeping this vocabulary's term where both hold the same match form.
+    /// Each side's vectors are reused, so nothing is embedded again.
+    public func adding(_ other: SynonymVocabulary) -> SynonymVocabulary {
+        var seen = Set<String>()
+        var merged: [Term] = []
+        merged.reserveCapacity(terms.count + other.terms.count)
+
+        for term in terms + other.terms where seen.insert(term.matchForm.lowercased()).inserted {
+            merged.append(term)
+        }
+
+        return SynonymVocabulary(terms: merged)
+    }
+
+    /// ``adding(_:)`` for raw identifiers, embedding only the match forms this vocabulary lacks.
+    public func adding(identifiers: [String]) -> SynonymVocabulary {
+        let held = Set(terms.map { $0.matchForm.lowercased() })
+        return SynonymVocabulary(terms: terms + Self.embed(identifiers, excluding: held))
+    }
+
+    private static func embed(_ identifiers: [String], excluding held: Set<String>) -> [Term] {
+        let embedding = NLEmbedding.wordEmbedding(for: .english)
+        var seen = held
+
+        return identifiers.compactMap { identifier in
             let words = identifier.snakeCaseWords
             guard words.isNotEmpty else { return nil }
 
-            let vector = embedding.flatMap { Self.meanVector(of: words, in: $0) }
+            let matchForm = words.joined(separator: " ")
+            guard seen.insert(matchForm.lowercased()).inserted else { return nil }
 
-            return Term(
-                matchForm: words.joined(separator: " "),
-                words: words,
-                vector: vector,
-                norm: vector.map(Self.magnitude) ?? 0
-            )
+            let vector = embedding.flatMap { meanVector(of: words, in: $0) }
+
+            return Term(matchForm: matchForm, words: words, vector: vector, norm: vector.map(magnitude) ?? 0)
         }
     }
 
@@ -117,4 +138,30 @@ public struct SynonymVocabulary: Sendable {
 
         return 1 - dot / (normA * normB)
     }
+}
+
+// MARK: - Master
+
+extension SynonymVocabulary {
+    /// Vision's image labels and SoundAnalysis's sound labels: the words Detect Keywords writes
+    /// in both products. Built on first use, since only a search that found nothing reads it.
+    ///
+    /// A classifier that cannot report its labels is logged and left out, so this may be empty.
+    public static let master: SynonymVocabulary = {
+        var identifiers: [String] = []
+
+        do {
+            identifiers += try VNClassifyImageRequest().supportedIdentifiers()
+        } catch {
+            Log.error("Couldn't read Vision's classification labels for related-word search:", error)
+        }
+
+        do {
+            identifiers += try SNClassifySoundRequest(classifierIdentifier: .version1).knownClassifications
+        } catch {
+            Log.error("Couldn't read SoundAnalysis's classification labels for related-word search:", error)
+        }
+
+        return SynonymVocabulary(identifiers: identifiers)
+    }()
 }

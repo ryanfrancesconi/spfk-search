@@ -10,7 +10,7 @@ fields, smart playlists and find and replace are built on it.
 It provides fuzzy free-text scoring that tolerates typos, case and diacritics; structured criteria,
 field rules joined by `AND`, `OR` and `NOT`, parsed from typed text or built in a UI against a field
 vocabulary the product supplies; find and replace over plain text; and expansion of a failed query to
-synonyms within a vocabulary the caller supplies.
+related words within a vocabulary.
 
 In free text, space-separated words must all match, while comma-separated terms are alternatives. A
 type becomes searchable by listing its strings most important first, since the first is weighted
@@ -23,9 +23,10 @@ This package parses and scores; it holds no files.
 
 - The encoded form of `SearchCriteria` is schema. Smart playlists persist it, so changing it is a
   migration.
-- Synonym expansion is a fallback: run it only when the literal search found nothing, and keep its
-  scores below the literal ones, or an inferred match outranks what the user typed. The package
-  ships no vocabulary of its own.
+- Synonym expansion is a fallback: run it only when the literal search found nothing, and score
+  each way of reaching a result within its own band, below the literal one, or an inferred match
+  outranks what the user typed. The master vocabulary is the labels of Apple's image and sound
+  classifiers; a product adds its own subject matter's terms to it.
 
 ## About
 

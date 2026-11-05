@@ -11,13 +11,11 @@ import SPFKBase
 /// `NLEmbedding` scan constrained to the injected ``SynonymVocabulary``. Both are restricted to
 /// vocabulary terms, so expansion never proposes a word no file could contain.
 ///
-/// **This is a fallback, and callers are responsible for treating it as one** — run it only when
-/// the literal search returned no results, and scale the resulting scores by
-/// ``SynonymConfig/scoreCeiling`` after applying the minimum-score filter. Running it
-/// unconditionally would let an inferred match outrank a literal one.
+/// **This is a fallback**: run it only when the literal search found nothing, and score what each
+/// tier reaches within its ``SearchMatchTier`` band, so an inferred match never outranks a literal one.
 ///
 /// ```swift
-/// let expander = SynonymExpander(vocabulary: visionVocabulary)
+/// let expander = SynonymExpander(vocabulary: .master)
 /// let extra = expander.expansions(for: query.array)   // ["bicycle"]
 /// ```
 public struct SynonymExpander: Sendable {
@@ -55,10 +53,16 @@ public struct SynonymExpander: Sendable {
     /// - Returns: Expansion terms in vocabulary match form, deduplicated, or an empty array when
     ///   nothing qualifies.
     public func expansions(for terms: [String]) -> [String] {
-        guard vocabulary.terms.isNotEmpty else { return [] }
+        expansions(for: terms, through: .embeddedSynonym)
+    }
+
+    /// ``expansions(for:)`` from the tiers ranked at or above `tier` only: nothing for
+    /// `.literal`, the curated table alone for `.curatedSynonym`.
+    public func expansions(for terms: [String], through tier: SearchMatchTier) -> [String] {
+        guard tier != .literal, vocabulary.terms.isNotEmpty else { return [] }
 
         let original = Set(terms.map { $0.lowercased() })
-        let embedding = config.usesEmbedding ? NLEmbedding.wordEmbedding(for: .english) : nil
+        let embedding = config.usesEmbedding && tier <= .embeddedSynonym ? NLEmbedding.wordEmbedding(for: .english) : nil
 
         var seen = Set<String>()
         var result: [String] = []

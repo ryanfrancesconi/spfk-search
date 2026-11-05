@@ -7,6 +7,7 @@ import Testing
 
 @testable import SPFKSearch
 
+@Suite(.tags(.synonyms))
 final class SynonymExpanderTests: TestCaseModel {
     /// A Vision-shaped vocabulary: lowercase identifiers, some snake_case compounds.
     static let identifiers = [
@@ -136,6 +137,30 @@ final class SynonymExpanderTests: TestCaseModel {
         )
 
         #expect(disabled.expansions(for: ["bike"]).isEmpty)
+    }
+
+    // MARK: - Through a tier
+
+    @Test func throughLiteralExpandsNothing() {
+        #expect(makeExpander().expansions(for: ["bike", "boat"], through: .literal).isEmpty)
+    }
+
+    /// "boat" reaches "sailboat" only through the embedding, so stopping at the curated tier
+    /// leaves it out while "bike" still reaches "bicycle".
+    @Test func throughCuratedReturnsCuratedExpansionsOnly() {
+        let expansions = makeExpander().expansions(for: ["bike", "boat"], through: .curatedSynonym)
+
+        #expect(expansions == ["bicycle"])
+    }
+
+    @Test func throughEmbeddedEqualsEveryExpansion() {
+        let expander = makeExpander()
+
+        for terms in [["bike"], ["boat"], ["bike", "boat"], ["puppy"], ["asphalt"]] {
+            #expect(expander.expansions(for: terms, through: .embeddedSynonym) == expander.expansions(for: terms))
+        }
+
+        #expect(expander.expansions(for: ["bike", "boat"]).contains("sailboat"))
     }
 
     // MARK: - Lemmatization
