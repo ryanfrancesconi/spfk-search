@@ -183,3 +183,9 @@ public struct SynonymExpander: Sendable {
         }
     }
 }
+
+extension SynonymExpander {
+    /// An expander over ``SynonymVocabulary/master``, built on first use. Touch it off the main
+    /// thread before a synchronous caller needs it, since building embeds the whole vocabulary.
+    public static let master = SynonymExpander(vocabulary: .master)
+}
