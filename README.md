@@ -1,31 +1,21 @@
 # SPFKSearch
 
 [![Version](https://img.shields.io/github/v/tag/ryanfrancesconi/spfk-search)](https://github.com/ryanfrancesconi/spfk-search/tags)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-search%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-search)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-search%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-search)
+[![Swift](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-search%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-search)
+[![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-search%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-search)
 
-Matches what a user types against a media library. Both products' search
-fields, smart playlists and find and replace are built on it.
+Text search for media libraries: fuzzy scoring of free text, structured search criteria, find and
+replace, and synonym expansion. It parses and scores; it does not store or index files.
 
-It provides fuzzy free-text scoring that tolerates typos, case and diacritics; structured criteria,
-field rules joined by `AND`, `OR` and `NOT`, parsed from typed text or built in a UI against a field
-vocabulary the product supplies; find and replace over plain text; and expansion of a failed query to
-related words within a vocabulary.
+## Features
 
-In free text, space-separated words must all match, while comma-separated terms are alternatives. A
-type becomes searchable by listing its strings most important first, since the first is weighted
-above the rest.
-
-The index and store a search runs over belong to spfk-playlist-data and the products' data packages.
-This package parses and scores; it holds no files.
-
-## Constraints
-
-- The encoded form of `SearchCriteria` is schema. Smart playlists persist it, so changing it is a
-  migration.
-- Score each way of reaching a result through synonym expansion within its own band, below the
-  literal one, or an inferred match outranks what the user typed. The master vocabulary is the labels of Apple's image and sound
-  classifiers; a product adds its own subject matter's terms to it.
+- Fuzzy matching that tolerates typos, case and diacritics
+- Space-separated words must all match; comma-separated terms are alternatives
+- A type becomes searchable by listing its strings, most important first (`Searchable`)
+- Structured criteria (`SearchCriteria`) built in code or parsed from typed text with `AND`, `OR`
+  and `NOT`, against a field vocabulary the caller supplies
+- Find and replace over plain text (`TextReplacer`)
+- Expansion of a query to related words within a vocabulary (`SynonymExpander`)
 
 ## About
 
