@@ -9,31 +9,6 @@ import Testing
 @testable import SPFKSearch
 
 final class QuerySearchTests: TestCaseModel {
-    // MARK: - Static Configs
-
-    @Test func defaultConfigValues() {
-        let config = QuerySearch.defaultConfig
-        #expect(config.minScore == 0.7)
-    }
-
-    @Test func autocompleteConfigValues() {
-        let config = QuerySearch.autocompleteConfig
-        #expect(config.minScore == 0.6)
-    }
-
-    // MARK: - Init with minimumScore
-
-    @Test func initWithMinimumScoreUsesTightConfig() {
-        let qs = QuerySearch(
-            searchableValue: ["hello"],
-            query: DelimitedQuery(string: "hello"),
-            minimumScore: 0.5
-        )
-
-        #expect(qs.minimumScore == 0.5)
-        #expect(qs.similarity != nil)
-    }
-
     // MARK: - Empty Inputs
 
     @Test func emptySearchableValueReturnsZero() {

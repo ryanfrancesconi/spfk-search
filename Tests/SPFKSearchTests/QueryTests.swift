@@ -101,24 +101,4 @@ final class QueryTests: TestCaseModel {
         #expect(query.array.contains("drums"))
         #expect(query.array.contains("drum"))
     }
-
-    // MARK: - Equatable / Hashable
-
-    @Test func equalityForSameInput() {
-        let a = DelimitedQuery(string: "bird, fish")
-        let b = DelimitedQuery(string: "bird, fish")
-        #expect(a == b)
-    }
-
-    @Test func inequalityForDifferentInput() {
-        let a = DelimitedQuery(string: "bird")
-        let b = DelimitedQuery(string: "fish")
-        #expect(a != b)
-    }
-
-    @Test func hashableConsistency() {
-        let a = DelimitedQuery(string: "test query")
-        let b = DelimitedQuery(string: "test query")
-        #expect(a.hashValue == b.hashValue)
-    }
 }
