@@ -24,7 +24,7 @@ public typealias SearchableValue = [String]
 public protocol Searchable: Sendable, Hashable {
     /// The strings to match against when searching this instance.
     ///
-    /// Place the most important field first — it receives a scoring boost.
+    /// Place the most important field first - it receives a scoring boost.
     var searchableValue: SearchableValue { get }
 
     /// Whether every field of ``searchableValue`` is already `normalized`, with `-` and `_` read as
@@ -36,23 +36,23 @@ extension Searchable {
     public static var searchValueIsNormalized: Bool { false }
 
     /// Returns `true` when this item has at least one searchable field that could plausibly
-    /// match one of the given query terms — a fast O(n·m) gate before the full fuzzy scorer.
+    /// match one of the given query terms - a fast O(n·m) gate before the full fuzzy scorer.
     ///
-    /// Skips fuzzy scoring for ~85% of elements on a typical query — `FuzzyMatcher`'s bitmask
-    /// prefilter passes most long metadata strings regardless — and eliminates false positives like
+    /// Skips fuzzy scoring for ~85% of elements on a typical query - `FuzzyMatcher`'s bitmask
+    /// prefilter passes most long metadata strings regardless - and eliminates false positives like
     /// `"sci fi"` matching `"Boom, Fire, Fire Crackle"` on shared characters alone.
     ///
     /// Deliberately tolerant, to avoid false negatives:
     ///
-    /// - **Separator normalization** — hyphens and underscores are mapped to spaces in both
+    /// - **Separator normalization** - hyphens and underscores are mapped to spaces in both
     ///   terms and candidates so `"sci-fi"` matches `"sci fi"` and vice versa.
     ///
-    /// - **Two-thirds prefix** — only the leading `max(3, count*2/3)` characters of each
+    /// - **Two-thirds prefix** - only the leading `max(3, count*2/3)` characters of each
     ///   normalized term are required to appear as a substring, which tolerates trailing
     ///   typos and single-character insertions (e.g. `"percusion"` → checks `"perc"` →
     ///   passes `"percussion"`, `"whistle"` → checks `"whis"` instead of `"whi"`).
     ///
-    /// - **Short-term exclusion** — terms shorter than 3 characters are excluded from the
+    /// - **Short-term exclusion** - terms shorter than 3 characters are excluded from the
     ///   gate entirely; when *all* terms are short the method returns `true` unconditionally
     ///   so the fuzzy scorer makes the final call.
     ///
@@ -117,7 +117,7 @@ extension Searchable {
     ///
     /// - Parameters:
     ///   - query: The parsed search query.
-    ///   - minimumScore: The minimum similarity score (0–1) required to return a result.
+    ///   - minimumScore: The minimum similarity score (0-1) required to return a result.
     /// - Returns: The best match score, or `nil` if below the threshold.
     public func similarity(
         to query: DelimitedQuery,

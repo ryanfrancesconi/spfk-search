@@ -4,7 +4,7 @@ import Foundation
 
 /// A prepared find and replace pass over plain text.
 ///
-/// Case folding passes no locale, so a result never depends on the user's system locale —
+/// Case folding passes no locale, so a result never depends on the user's system locale -
 /// unlike ``String/normalized``, which serves the search index and folds against `.current`.
 public struct TextReplacer: Sendable {
     public let find: String
@@ -159,7 +159,7 @@ public struct TextReplacer: Sendable {
     /// Collapses the variants no `CompareOptions` value reaches: curly quotes onto their ASCII
     /// form, and half-width kana onto the precomposed full-width form.
     ///
-    /// The width transform is what makes `ﾄﾞﾗﾑ` match `ドラム` — `.widthInsensitive` alone does,
+    /// The width transform is what makes `ﾄﾞﾗﾑ` match `ドラム` - `.widthInsensitive` alone does,
     /// but paired with `.diacriticInsensitive` it strips the half-width voiced mark from one side
     /// only and the two stop matching (measured 2026-09-09).
     private static func canonical(_ text: String) -> String {

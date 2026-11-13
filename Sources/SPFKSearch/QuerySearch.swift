@@ -11,8 +11,8 @@ import SPFKBase
 /// (first element gets a 1.1x boost), and returns the best score that meets
 /// the minimum threshold.
 ///
-/// Use one of the preset configurations — ``defaultConfig`` for general search
-/// or ``autocompleteConfig`` for type-ahead — or provide a custom `MatchConfig`.
+/// Use one of the preset configurations - ``defaultConfig`` for general search
+/// or ``autocompleteConfig`` for type-ahead - or provide a custom `MatchConfig`.
 ///
 /// ```swift
 /// let search = QuerySearch(
@@ -32,7 +32,7 @@ public struct QuerySearch: Sendable {
     /// The matching configuration controlling algorithm, thresholds, and weights.
     public let matchConfig: MatchConfig
 
-    /// The computed similarity score (0–1), or `nil` if no term met the minimum threshold.
+    /// The computed similarity score (0-1), or `nil` if no term met the minimum threshold.
     public private(set) var similarity: UnitInterval?
 
     /// The minimum score required from ``matchConfig``.
@@ -70,7 +70,7 @@ public struct QuerySearch: Sendable {
     /// - Parameters:
     ///   - searchableValue: The strings to match against.
     ///   - query: The parsed search query.
-    ///   - minimumScore: Minimum similarity score (0–1) for a result to be considered.
+    ///   - minimumScore: Minimum similarity score (0-1) for a result to be considered.
     public init(
         searchableValue: SearchableValue,
         query: DelimitedQuery,

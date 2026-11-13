@@ -25,7 +25,7 @@ public struct SynonymVocabulary: Sendable {
 
         /// Component words, each embedded separately.
         ///
-        /// Compounds need this because **`NLEmbedding` has no vector for a multi-word string** —
+        /// Compounds need this because **`NLEmbedding` has no vector for a multi-word string** -
         /// `vector(for: "mountain bike")` is nil, not a poor match. 193 of Vision's 1303
         /// identifiers are compound, so treating them as single tokens would silently drop ~15%
         /// of the vocabulary out of embedding expansion with no error.
@@ -47,8 +47,8 @@ public struct SynonymVocabulary: Sendable {
 
     /// Builds a vocabulary from raw classification identifiers, each match form embedded once.
     ///
-    /// Identifiers are decomposed with ``Swift/String/snakeCaseWords`` — the same parse that
-    /// produces the stored keyword form — so the match form and the embedding decomposition
+    /// Identifiers are decomposed with ``Swift/String/snakeCaseWords`` - the same parse that
+    /// produces the stored keyword form - so the match form and the embedding decomposition
     /// cannot drift apart. Matching folds case on both sides, so only word separation matters.
     ///
     /// - Parameter identifiers: Raw identifiers, e.g. `["toaster_oven", "bicycle"]`.

@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Space-delimited words must all match; comma-delimited parts are alternatives. ``termGroups``
 /// carries that: every group must match, through any one of its terms. A term of ``array`` in no
-/// group — the whole phrase — matches the query on its own, so a typo spanning words still finds.
+/// group - the whole phrase - matches the query on its own, so a typo spanning words still finds.
 ///
 /// ```swift
 /// let q = DelimitedQuery(string: "haunted stonehenge moon")
@@ -46,7 +46,7 @@ public struct DelimitedQuery: Sendable, Hashable, Equatable {
     ///     otherwise the string is split on spaces. Empty input produces an empty array.
     ///   - singularize: When `true` (default), appends de-pluralized variants for words
     ///     ending in "s" to improve recall for user search queries. Pass `false` when the
-    ///     input is a metadata corpus rather than a user query — singularization can cause
+    ///     input is a metadata corpus rather than a user query - singularization can cause
     ///     false prefix collisions (e.g. "bees" → "bee" matching catID "BEEP").
     public init(string: String, singularize: Bool = true) {
         guard string.isNotEmpty else {

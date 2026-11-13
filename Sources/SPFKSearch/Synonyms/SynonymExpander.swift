@@ -25,7 +25,7 @@ public struct SynonymExpander: Sendable {
     /// Tuning; see ``SynonymConfig``.
     public let config: SynonymConfig
 
-    /// Terms shorter than this are not sent to the *embedding* tier — they carry too little
+    /// Terms shorter than this are not sent to the *embedding* tier - they carry too little
     /// signal and land near far too much of any vocabulary.
     ///
     /// The curated tier has no such limit: a short entry there is deliberate, and `"tv"` →
@@ -48,7 +48,7 @@ public struct SynonymExpander: Sendable {
 
     /// Additional terms to search for, excluding anything already in `terms`.
     ///
-    /// - Parameter terms: The original query terms, normalized (lowercased, diacritic-folded) —
+    /// - Parameter terms: The original query terms, normalized (lowercased, diacritic-folded) -
     ///   typically `DelimitedQuery.array`.
     /// - Returns: Expansion terms in vocabulary match form, deduplicated, or an empty array when
     ///   nothing qualifies.
@@ -154,13 +154,13 @@ public struct SynonymExpander: Sendable {
     /// Embedding vectors to search with: the term's own, plus its lemma's when they differ.
     ///
     /// **Both are used, not one as a fallback for the other.** An inflected form usually *has* a
-    /// vector — `"biking"` does — it is just the wrong one, clustering with `hiking`/`rafting`
+    /// vector - `"biking"` does - it is just the wrong one, clustering with `hiking`/`rafting`
     /// rather than reaching `bicycle`. Treating the lemma as a fallback for a missing vector
     /// would therefore never fire on the very case lemmatization exists to fix. Searching both
     /// also avoids the opposite hazard, where a lemma changes meaning outright (`glasses` →
     /// `glass`) and would lose the original sense if it replaced the term.
     ///
-    /// Multi-word terms are averaged the same way vocabulary entries are — `DelimitedQuery` keeps
+    /// Multi-word terms are averaged the same way vocabulary entries are - `DelimitedQuery` keeps
     /// the whole phrase as a term for space-delimited input, and `NLEmbedding` has no vector for
     /// a phrase.
     private func queryVectors(

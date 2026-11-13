@@ -10,7 +10,7 @@ public struct SynonymConfig: Sendable {
     ///
     /// **This is on the cosine-distance scale computed over averaged word vectors, not the scale
     /// `NLEmbedding.distance(between:and:)` returns.** The two differ substantially for the same
-    /// pair — `bike`/`bicycle` is 0.216 here and 0.657 through that API — because expansion has
+    /// pair - `bike`/`bicycle` is 0.216 here and 0.657 through that API - because expansion has
     /// to support multi-word terms, which `distance(between:and:)` cannot score at all
     /// (`NLEmbedding` has no vector for a compound). Comparing a threshold from one scale against
     /// the other silently accepts or rejects everything.

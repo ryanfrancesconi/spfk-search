@@ -13,7 +13,7 @@ public struct TextMatchOptions: Sendable, Hashable, Codable {
 
     /// Folds diacritics, full/half width forms and apostrophe/quote style together.
     ///
-    /// Ignored when ``useRegex`` is on — `NSRegularExpression` has no equivalent options.
+    /// Ignored when ``useRegex`` is on - `NSRegularExpression` has no equivalent options.
     public var ignoreDiacritics: Bool
 
     /// Interprets the find text as an ICU regular expression and the replacement as a

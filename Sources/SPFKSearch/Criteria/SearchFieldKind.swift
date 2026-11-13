@@ -14,7 +14,7 @@ public enum SearchFieldKind: Sendable, Hashable {
     /// Several text values, such as keywords.
     case list
 
-    /// 0–5.
+    /// 0-5.
     case rating
 
     /// Matched by `ColorName`.

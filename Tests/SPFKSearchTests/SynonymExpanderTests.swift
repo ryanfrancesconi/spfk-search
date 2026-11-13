@@ -165,12 +165,12 @@ final class SynonymExpanderTests: TestCaseModel {
 
     // MARK: - Lemmatization
 
-    /// The lemma is a lookup key only. An inflected term has its own (wrong) vector — "biking"
-    /// clusters with hiking/rafting — so the lemma must be searched alongside it, not merely as
+    /// The lemma is a lookup key only. An inflected term has its own (wrong) vector - "biking"
+    /// clusters with hiking/rafting - so the lemma must be searched alongside it, not merely as
     /// a fallback for a missing vector.
     ///
     /// Runs with the embedding tier disabled so this can only pass via the lemma reaching the
-    /// curated `bike`/`bicycle` group — otherwise embedding proximity to `cycling`/`bicycle`
+    /// curated `bike`/`bicycle` group - otherwise embedding proximity to `cycling`/`bicycle`
     /// would make it pass for the wrong reason.
     @Test func inflectedTermsReachTheirLemmasSynonyms() throws {
         let curatedOnly = makeExpander(
@@ -180,7 +180,7 @@ final class SynonymExpanderTests: TestCaseModel {
         #expect(curatedOnly.expansions(for: ["biking"]) == ["bicycle"])
     }
 
-    /// `NLTagger`'s lemma coverage is real but **partial and not predictable per word** — measured
+    /// `NLTagger`'s lemma coverage is real but **partial and not predictable per word** - measured
     /// in this target, `cars`/`flowers`/`children`/`boxes` resolve while `dogs`/`mice`/`sunsets`
     /// return nil, with no rule separating them. That is tolerable because it is additive:
     /// `DelimitedQuery` already contributes trailing-s singulars, and the original term is always
@@ -198,7 +198,7 @@ final class SynonymExpanderTests: TestCaseModel {
     // MARK: - Short terms
 
     /// The length gate applies to the embedding tier only. A short curated entry is deliberate,
-    /// and `"tv"` is exactly the kind of query the curated table exists to serve — gating it out
+    /// and `"tv"` is exactly the kind of query the curated table exists to serve - gating it out
     /// would discard a known-good answer to avoid noise that cannot occur.
     @Test func shortTermsStillUseTheCuratedTier() throws {
         #expect(makeExpander().expansions(for: ["tv"]) == ["television"])

@@ -4,11 +4,11 @@ import Foundation
 
 /// Hand-authored synonym groups, checked before the embedding tier.
 ///
-/// These exist because word embeddings encode *relatedness*, not synonymy — measured,
+/// These exist because word embeddings encode *relatedness*, not synonymy - measured,
 /// `puppy` is closer to `kitten` (0.293) than to `dog` (0.312). No threshold separates a synonym
 /// from a sibling, so the cases that matter most are stated outright instead.
 ///
-/// Groups are symmetric: any member expands to all the others. Kept deliberately small — the
+/// Groups are symmetric: any member expands to all the others. Kept deliberately small - the
 /// embedding tier covers the long tail, and every entry here is a maintenance obligation. Only
 /// add true synonyms; a sibling pair (`sunset`/`sunrise`, `dog`/`cat`) belongs in neither tier.
 enum CuratedSynonyms {

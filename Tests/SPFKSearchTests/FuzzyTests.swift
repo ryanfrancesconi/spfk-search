@@ -207,7 +207,7 @@ extension FuzzyTests {
     /// A "bad" pair is a character-level coincidence that should NOT match.
     ///
     /// Note: gerund→base forms (e.g. "roaring"→"Roar") score below 0.64 due to Jaro-Winkler
-    /// length-difference penalties. This is acceptable — the UCS database provides multiple
+    /// length-difference penalties. This is acceptable - the UCS database provides multiple
     /// synonym forms per entry, so a gerund will match via another term.
     ///
     /// Note: UCSDetector uses word-anchored prefix matching (not Jaro-Winkler) precisely
@@ -218,7 +218,7 @@ extension FuzzyTests {
             let candidate: String
         }
 
-        // Pairs that SHOULD match — same-root word, different form (plural, typo, gerund).
+        // Pairs that SHOULD match - same-root word, different form (plural, typo, gerund).
         let goodPairs: [Pair] = [
             Pair(query: "growls",    candidate: "Growl"),         // -s suffix
             Pair(query: "lions",     candidate: "Lion"),           // -s suffix
@@ -234,7 +234,7 @@ extension FuzzyTests {
             Pair(query: "hissing",   candidate: "Hissing"),        // exact gerund
         ]
 
-        // Pairs that should NOT match — real English words sharing characters by coincidence.
+        // Pairs that should NOT match - real English words sharing characters by coincidence.
         let badPairs: [Pair] = [
             Pair(query: "lion",    candidate: "Ignite"),          // Jaro char coincidence (~0.55)
             Pair(query: "growls",  candidate: "Gallop"),          // share g, o, l (~0.60-0.63)
@@ -281,14 +281,14 @@ extension FuzzyTests {
 
         // Must have some threshold where all noise matches are blocked.
         let blockThreshold = allBadBlocked?.threshold
-        #expect(blockThreshold != nil, "No threshold in [0.50, 0.90] blocks all bad pairs — the fuzzy algorithm may be too lenient for UCS use")
+        #expect(blockThreshold != nil, "No threshold in [0.50, 0.90] blocks all bad pairs - the fuzzy algorithm may be too lenient for UCS use")
 
         if let bt = blockThreshold {
             // All good pairs must still pass at the block threshold.
-            // (Some gerund→base forms score below this — they're intentionally excluded from goodPairs.)
+            // (Some gerund→base forms score below this - they're intentionally excluded from goodPairs.)
             let row = results.first(where: { $0.threshold == bt })!
             #expect(row.goodPass == goodPairs.count,
-                "At the bad-blocking threshold (%.2f), only \(row.goodPass)/\(goodPairs.count) good pairs pass — add more synonym coverage or lower minScore")
+                "At the bad-blocking threshold (%.2f), only \(row.goodPass)/\(goodPairs.count) good pairs pass - add more synonym coverage or lower minScore")
         }
     }
 }

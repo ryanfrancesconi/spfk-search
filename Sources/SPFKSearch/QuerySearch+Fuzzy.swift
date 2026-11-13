@@ -141,7 +141,7 @@ extension QuerySearch {
     /// Scores a single candidate's searchable fields against pre-prepared query terms.
     ///
     /// Returns the highest score across all (term × field) pairs that meets `minScore`, or `0`
-    /// when none does — or when one of `requirement`'s groups has no term that does.
+    /// when none does - or when one of `requirement`'s groups has no term that does.
     ///
     /// The first searchable element (j==0, typically the primary category name) receives a
     /// 1.1× boost when the query term is a semantically exact match (`ScoredMatch.kind == .exact`),
@@ -252,12 +252,12 @@ extension QuerySearch {
     /// Iterates all query terms against all searchable strings using `FuzzyMatcher`.
     /// The first searchable element receives a 1.1x boost; subsequent elements
     /// receive a 0.9x penalty. Returns the highest score that meets ``minimumScore``,
-    /// clamped to 0–1, or `0` when a required term group has no match.
+    /// clamped to 0-1, or `0` when a required term group has no match.
     ///
     /// Called automatically during ``QuerySearch/init(searchableValue:query:matchConfig:)``;
     /// the result is stored in ``similarity``.
     ///
-    /// - Returns: The best match score (0–1), or `0` if no term meets the threshold.
+    /// - Returns: The best match score (0-1), or `0` if no term meets the threshold.
     public func fuzzySimilarity() -> UnitInterval {
         let matcher = FuzzyMatcher(config: matchConfig)
         var buffer = matcher.makeBuffer()

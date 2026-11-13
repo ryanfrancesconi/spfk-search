@@ -6,7 +6,7 @@ import NaturalLanguage
 /// Reduces an inflected word to its dictionary form, so expansion can reach terms the inflected
 /// spelling cannot.
 ///
-/// Without this, `"biking"` never reaches `"bicycle"` — measured, it lands in the activity cluster
+/// Without this, `"biking"` never reaches `"bicycle"` - measured, it lands in the activity cluster
 /// (`hiking`, `rafting`, `trail`) instead.
 ///
 /// **The lemma is only used to look up expansion candidates; it never replaces the term the user
